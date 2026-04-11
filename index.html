@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1F4E79">
+<meta name="description" content="Gestor de Reglas de Derivación — Red Asistencial">
+<link rel="manifest" href="manifest.json">
+<title>Reglas de Derivación</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--azul-osc:#1F4E79;--azul-med:#2E75B6;--azul-clar:#DEEAF1;--verde-osc:#1E5C3A;--verde-med:#2E8B57;--verde-clar:#E2EFDA;--gris:#F2F7FC;--blanco:#ffffff;--texto:#1a1a2e;--texto-sec:#5a5a7a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:var(--texto);min-height:100vh;}
+.header{background:var(--azul-osc);color:white;padding:16px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3);}
+.header-icon{width:40px;height:40px;background:var(--azul-med);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.header h1{font-size:18px;font-weight:600;}
+.header p{font-size:11px;opacity:.75;}
+.main{max-width:1100px;margin:0 auto;padding:20px 16px;}
+.card{background:white;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.07);}
+.card-title{font-size:13px;font-weight:700;color:var(--azul-osc);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+.upload-zone{border:2px dashed var(--azul-med);border-radius:12px;padding:24px 20px;text-align:center;transition:all .2s;background:var(--azul-clar);}
+.upload-zone.loaded{border-color:var(--verde-med);background:var(--verde-clar);}
+.upload-zone.error{border-color:#e53e3e;background:#FFF5F5;cursor:pointer;}
+.upload-zone.error:hover{background:#FED7D7;}
+.upload-icon{font-size:32px;margin-bottom:8px;}
+.upload-txt{font-size:14px;color:var(--azul-osc);font-weight:600;}
+.upload-hint{font-size:12px;color:var(--texto-sec);margin-top:4px;}
+#file-input{display:none;}
+.btn-actualizar{margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;}
+.stat-card{background:var(--gris);border-radius:10px;padding:12px;text-align:center;}
+.stat-val{font-size:22px;font-weight:700;color:var(--azul-osc);}
+.stat-lbl{font-size:11px;color:var(--texto-sec);margin-top:2px;}
+.filtros-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;}
+.filtro-group label{font-size:12px;font-weight:600;color:var(--azul-osc);display:block;margin-bottom:4px;}
+.filtro-group select{width:100%;padding:9px 12px;border:1.5px solid #d0d8e8;border-radius:8px;font-size:13px;background:white;color:var(--texto);outline:none;}
+.filtro-group select:focus{border-color:var(--azul-med);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+.btn{padding:10px 20px;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;}
+.btn-primary{background:var(--azul-osc);color:white;}
+.btn-primary:hover{background:var(--azul-med);}
+.btn-success{background:var(--verde-med);color:white;}
+.btn-success:hover{background:var(--verde-osc);}
+.btn-outline{background:white;color:var(--azul-osc);border:1.5px solid var(--azul-med);}
+.btn-outline:hover{background:var(--azul-clar);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.result-info{font-size:13px;color:var(--texto-sec);margin-bottom:12px;}
+.result-info strong{color:var(--azul-osc);}
+.espec-block{margin-bottom:22px;}
+.espec-titulo{background:var(--azul-osc);color:white;padding:10px 14px;border-radius:10px 10px 0 0;font-weight:700;font-size:13px;}
+.dest-header{background:var(--verde-med);color:white;padding:8px 12px;font-weight:600;font-size:12px;}
+.tabla-wrap{overflow-x:auto;border:1px solid #dde3ed;border-top:none;}
+.tabla-wrap:last-child{border-radius:0 0 10px 10px;}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:650px;}
+thead th{background:var(--verde-osc);color:white;padding:9px 12px;text-align:left;white-space:nowrap;font-size:11px;font-weight:600;}
+tbody tr:nth-child(even){background:var(--verde-clar);}
+tbody tr:hover{background:var(--azul-clar);}
+td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-height:1.4;}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
+.badge-ges{background:#D1FAE5;color:#065F46;}
+.badge-noges{background:#FEF3C7;color:#92400E;}
+.empty{text-align:center;padding:40px 20px;color:var(--texto-sec);}
+.empty-icon{font-size:44px;margin-bottom:12px;}
+.spinner{width:32px;height:32px;border:4px solid var(--azul-clar);border-top-color:var(--azul-med);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:white;padding:12px 24px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+@media(max-width:600px){.header h1{font-size:15px;}.main{padding:12px 10px;}.btn{padding:9px 13px;font-size:12px;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🏥</div>
+  <div>
+    <h1>Reglas de Derivación</h1>
+    <p>Red Asistencial — SSVSA</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="card">
+    <div class="card-title">📂 Estado del archivo</div>
+    <div class="upload-zone loaded" id="upload-zone">
+      <div class="upload-icon" id="upload-icon"><div class="spinner"></div></div>
+      <div class="upload-txt" id="upload-txt">Cargando datos automáticamente...</div>
+      <div class="upload-hint" id="upload-hint">Las reglas se cargan desde el servidor</div>
+    </div>
+    <div class="btn-actualizar">
+      <button class="btn btn-outline" onclick="cargarDesdeServidor()" style="font-size:12px;padding:7px 14px">🔄 Actualizar datos</button>
+      <span style="font-size:11px;color:var(--texto-sec)" id="ultima-act"></span>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.xls" onchange="loadFile(this.files[0])">
+  </div>
+
+  <div class="card" id="stats-card" style="display:none">
+    <div class="card-title">📊 Resumen</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Total reglas</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-espec">0</div><div class="stat-lbl">Especialidades</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-dest">0</div><div class="stat-lbl">Estab. destino</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-ges">0</div><div class="stat-lbl">Reglas GES</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-entidades">0</div><div class="stat-lbl">Entidades</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="filtros-card" style="display:none">
+    <div class="card-title">🔍 Filtros</div>
+    <div class="filtros-grid">
+      <div class="filtro-group"><label>Especialidad Destino</label>
+        <select id="f-espec" onchange="filtrar()"><option value="">Todas</option></select></div>
+      <div class="filtro-group"><label>Establecimiento Destino</label>
+        <select id="f-dest" onchange="filtrar()"><option value="">Todos</option></select></div>
+      <div class="filtro-group"><label>Entidad</label>
+        <select id="f-entidad" onchange="filtrar()"><option value="">Todas</option></select></div>
+      <div class="filtro-group"><label>GES / No GES</label>
+        <select id="f-ges" onchange="filtrar()">
+          <option value="">Todos</option>
+          <option value="GES">GES</option>
+          <option value="NO GES">No GES</option>
+        </select></div>
+      <div class="filtro-group"><label>Tipo de Derivación</label>
+        <select id="f-tipo" onchange="filtrar()"><option value="">Todos</option></select></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="limpiarFiltros()">↺ Limpiar</button>
+      <button class="btn btn-primary" onclick="filtrar()">🔍 Aplicar</button>
+      <button class="btn btn-success" onclick="exportar()" id="btn-export" disabled>📥 Exportar Excel</button>
+    </div>
+  </div>
+
+  <div class="card" id="resultado-card" style="display:none">
+    <div class="card-title">📋 Resultados</div>
+    <div class="result-info" id="result-info"></div>
+    <div id="tabla-container"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let DATA = [], FILTRADA = [];
+
+window.addEventListener('load', cargarDesdeServidor);
+
+async function cargarDesdeServidor() {
+  setEstadoCarga('cargando');
+  try {
+    const resp = await fetch('reglas.xlsx?v=' + Date.now());
+    if (!resp.ok) throw new Error('no encontrado');
+    const buf = await resp.arrayBuffer();
+    procesarExcel(buf, 'Servidor');
+    document.getElementById('ultima-act').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CL');
+  } catch(e) {
+    setEstadoCarga('error');
+  }
+}
+
+function setEstadoCarga(estado) {
+  const zona  = document.getElementById('upload-zone');
+  const icono = document.getElementById('upload-icon');
+  const txt   = document.getElementById('upload-txt');
+  const hint  = document.getElementById('upload-hint');
+  if (estado === 'cargando') {
+    zona.className   = 'upload-zone loaded';
+    zona.onclick     = null;
+    icono.innerHTML  = '<div class="spinner"></div>';
+    txt.textContent  = 'Cargando datos automáticamente...';
+    hint.textContent = 'Las reglas se cargan desde el servidor';
+  } else if (estado === 'error') {
+    zona.className   = 'upload-zone error';
+    zona.onclick     = () => document.getElementById('file-input').click();
+    icono.innerHTML  = '⚠️';
+    txt.textContent  = 'No se pudo cargar desde el servidor';
+    hint.textContent = 'Toca aquí para cargar el archivo manualmente';
+  } else if (estado === 'ok') {
+    zona.className   = 'upload-zone loaded';
+    zona.onclick     = null;
+    icono.innerHTML  = '✅';
+  }
+}
+
+function loadFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => procesarExcel(e.target.result, file.name);
+  reader.readAsArrayBuffer(file);
+}
+
+function procesarExcel(buffer, nombre) {
+  try {
+    const wb  = XLSX.read(buffer, { type: 'array' });
+    const ws  = wb.Sheets[wb.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    DATA = [];
+    for (let i = 1; i < raw.length; i++) {
+      const r = raw[i];
+      if (String(r[0]).trim().toUpperCase() !== 'SI') continue;
+      const diag = String(r[11]||'').trim().replace(/^,+/,'').trim();
+      const ges  = String(r[12]||'').trim().toUpperCase();
+      DATA.push({
+        entidad:    String(r[2] ||'').trim(),
+        estab_orig: String(r[3] ||'').trim(),
+        estab_dest: String(r[5] ||'').trim(),
+        espec_dest: String(r[7] ||'').trim(),
+        edad_desde: String(r[9] ||'').trim(),
+        edad_hasta: String(r[10]||'').trim(),
+        diagnostico: diag || 'Sin diagnóstico específico',
+        ges:  ges,
+        tipo: String(r[13]||'').trim(),
+      });
+    }
+    if (!DATA.length) throw new Error('Sin reglas activas');
+
+    document.getElementById('st-total').textContent     = DATA.length;
+    document.getElementById('st-espec').textContent     = new Set(DATA.map(d=>d.espec_dest)).size;
+    document.getElementById('st-dest').textContent      = new Set(DATA.map(d=>d.estab_dest)).size;
+    document.getElementById('st-ges').textContent       = DATA.filter(d=>d.ges==='GES').length;
+    document.getElementById('st-entidades').textContent = new Set(DATA.map(d=>d.entidad)).size;
+
+    poblarSelect('f-espec',   [...new Set(DATA.map(d=>d.espec_dest))].filter(Boolean).sort());
+    poblarSelect('f-dest',    [...new Set(DATA.map(d=>d.estab_dest))].filter(Boolean).sort());
+    poblarSelect('f-entidad', [...new Set(DATA.map(d=>d.entidad))].filter(Boolean).sort());
+    poblarSelect('f-tipo',    [...new Set(DATA.map(d=>d.tipo))].filter(Boolean).sort());
+
+    document.getElementById('stats-card').style.display   = 'block';
+    document.getElementById('filtros-card').style.display = 'block';
+
+    setEstadoCarga('ok');
+    document.getElementById('upload-txt').textContent  = `${DATA.length} reglas cargadas — ${nombre}`;
+    document.getElementById('upload-hint').textContent = 'Datos listos para consultar';
+
+    filtrar();
+    showToast('✅ ' + DATA.length + ' reglas cargadas');
+  } catch(err) {
+    showToast('Error: ' + err.message);
+    setEstadoCarga('error');
+  }
+}
+
+function fmtEdad(v) {
+  if (!v || !v.trim()) return '';
+  try {
+    const p = v.trim().split(/\s+/);
+    const a = parseInt(p[0]), m = parseInt(p[2]);
+    if (a >= 150) return 'Sin límite';
+    if (a === 0 && m === 0) return '0 años';
+    return m === 0 ? `${a} años` : `${a} años ${m} meses`;
+  } catch { return v; }
+}
+
+function poblarSelect(id, opciones) {
+  const sel = document.getElementById(id);
+  const val = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>';
+  opciones.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    sel.appendChild(opt);
+  });
+  if (val) sel.value = val;
+}
+
+function filtrar() {
+  const fE = document.getElementById('f-espec').value;
+  const fD = document.getElementById('f-dest').value;
+  const fN = document.getElementById('f-entidad').value;
+  const fG = document.getElementById('f-ges').value;
+  const fT = document.getElementById('f-tipo').value;
+  FILTRADA = DATA.filter(d =>
+    (!fE || d.espec_dest === fE) &&
+    (!fD || d.estab_dest === fD) &&
+    (!fN || d.entidad    === fN) &&
+    (!fG || d.ges        === fG) &&
+    (!fT || d.tipo       === fT)
+  );
+  renderTabla();
+  document.getElementById('btn-export').disabled = !FILTRADA.length;
+}
+
+function limpiarFiltros() {
+  ['f-espec','f-dest','f-entidad','f-ges','f-tipo'].forEach(id => document.getElementById(id).value = '');
+  filtrar();
+}
+
+function badgeGes(ges) {
+  if (ges === 'GES')    return `<span class="badge badge-ges">GES</span>`;
+  if (ges === 'NO GES') return `<span class="badge badge-noges">No GES</span>`;
+  return '';
+}
+
+function renderTabla() {
+  const cont = document.getElementById('tabla-container');
+  const card = document.getElementById('resultado-card');
+  const info = document.getElementById('result-info');
+  card.style.display = 'block';
+
+  if (!FILTRADA.length) {
+    info.innerHTML = '';
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>Sin resultados con los filtros aplicados</div></div>';
+    return;
+  }
+
+  info.innerHTML = `Mostrando <strong>${FILTRADA.length}</strong> regla${FILTRADA.length !== 1 ? 's' : ''}`;
+
+  const porEspec = {};
+  FILTRADA.forEach(d => {
+    if (!porEspec[d.espec_dest]) porEspec[d.espec_dest] = {};
+    if (!porEspec[d.espec_dest][d.estab_dest]) porEspec[d.espec_dest][d.estab_dest] = [];
+    porEspec[d.espec_dest][d.estab_dest].push(d);
+  });
+
+  let html = '';
+  Object.keys(porEspec).sort().forEach(esp => {
+    html += `<div class="espec-block"><div class="espec-titulo">🏥 ${esp}</div>`;
+    Object.keys(porEspec[esp]).sort().forEach(dest => {
+      const filas = porEspec[esp][dest];
+      html += `<div class="dest-header">📍 ${dest} — ${filas.length} regla${filas.length > 1 ? 's' : ''}</div>
+      <div class="tabla-wrap"><table>
+        <thead><tr>
+          <th>Entidad</th>
+          <th>Establecimiento Derivador</th>
+          <th>Rango de Edad</th>
+          <th>GES / No GES</th>
+          <th>Tipo de Derivación</th>
+          <th>Diagnóstico(s)</th>
+        </tr></thead><tbody>`;
+      filas.forEach(d => {
+        const rango = `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`;
+        html += `<tr>
+          <td>${d.entidad}</td>
+          <td>${d.estab_orig}</td>
+          <td style="white-space:nowrap">${rango}</td>
+          <td>${badgeGes(d.ges)}</td>
+          <td>${d.tipo}</td>
+          <td>${d.diagnostico}</td>
+        </tr>`;
+      });
+      html += `</tbody></table></div>`;
+    });
+    html += `</div>`;
+  });
+  cont.innerHTML = html;
+}
+
+function exportar() {
+  if (!FILTRADA.length) return;
+  const wb = XLSX.utils.book_new();
+  const porEspec = {};
+  FILTRADA.forEach(d => {
+    if (!porEspec[d.espec_dest]) porEspec[d.espec_dest] = {};
+    if (!porEspec[d.espec_dest][d.estab_dest]) porEspec[d.espec_dest][d.estab_dest] = [];
+    porEspec[d.espec_dest][d.estab_dest].push(d);
+  });
+  Object.keys(porEspec).sort().forEach(esp => {
+    const rows = [['Especialidad Destino','Establecimiento Destino','Entidad',
+                   'Establecimiento Derivador','Rango de Edad','GES / No GES',
+                   'Tipo de Derivación','Diagnóstico(s)']];
+    Object.keys(porEspec[esp]).sort().forEach(dest => {
+      porEspec[esp][dest].forEach(d => {
+        rows.push([esp, dest, d.entidad, d.estab_orig,
+          `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`,
+          d.ges, d.tipo, d.diagnostico]);
+      });
+      rows.push([]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [20,35,18,35,20,12,20,55].map(w => ({wch:w}));
+    XLSX.utils.book_append_sheet(wb, ws, esp.substring(0, 31));
+  });
+  XLSX.writeFile(wb, 'Derivaciones_Filtradas.xlsx');
+  showToast('✅ Excel exportado');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
