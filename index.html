@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1F4E79">
-<meta name="description" content="Gestor de Reglas de Derivación — Red Asistencial">
+<meta name="description" content="Gestor de Reglas de Derivación — Red Asistencial SSVSA">
 <link rel="manifest" href="manifest.json">
 <title>Reglas de Derivación</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -113,6 +113,8 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
         <select id="f-espec" onchange="filtrar()"><option value="">Todas</option></select></div>
       <div class="filtro-group"><label>Establecimiento Destino</label>
         <select id="f-dest" onchange="filtrar()"><option value="">Todos</option></select></div>
+      <div class="filtro-group"><label>Establecimiento Derivador</label>
+        <select id="f-orig" onchange="filtrar()"><option value="">Todos</option></select></div>
       <div class="filtro-group"><label>Entidad</label>
         <select id="f-entidad" onchange="filtrar()"><option value="">Todas</option></select></div>
       <div class="filtro-group"><label>GES / No GES</label>
@@ -147,7 +149,7 @@ let DATA = [], FILTRADA = [];
 window.addEventListener('load', cargarDesdeServidor);
 
 async function cargarDesdeServidor() {
-  setEstadoCarga('cargando');
+  setEstado('cargando');
   try {
     const resp = await fetch('reglas.xlsx?v=' + Date.now());
     if (!resp.ok) throw new Error('no encontrado');
@@ -155,31 +157,29 @@ async function cargarDesdeServidor() {
     procesarExcel(buf, 'Servidor');
     document.getElementById('ultima-act').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CL');
   } catch(e) {
-    setEstadoCarga('error');
+    setEstado('error');
   }
 }
 
-function setEstadoCarga(estado) {
+function setEstado(estado) {
   const zona  = document.getElementById('upload-zone');
   const icono = document.getElementById('upload-icon');
   const txt   = document.getElementById('upload-txt');
   const hint  = document.getElementById('upload-hint');
   if (estado === 'cargando') {
-    zona.className   = 'upload-zone loaded';
-    zona.onclick     = null;
-    icono.innerHTML  = '<div class="spinner"></div>';
-    txt.textContent  = 'Cargando datos automáticamente...';
-    hint.textContent = 'Las reglas se cargan desde el servidor';
+    zona.className='upload-zone loaded'; zona.onclick=null;
+    icono.innerHTML='<div class="spinner"></div>';
+    txt.textContent='Cargando datos automáticamente...';
+    hint.textContent='Las reglas se cargan desde el servidor';
   } else if (estado === 'error') {
-    zona.className   = 'upload-zone error';
-    zona.onclick     = () => document.getElementById('file-input').click();
-    icono.innerHTML  = '⚠️';
-    txt.textContent  = 'No se pudo cargar desde el servidor';
-    hint.textContent = 'Toca aquí para cargar el archivo manualmente';
+    zona.className='upload-zone error';
+    zona.onclick=()=>document.getElementById('file-input').click();
+    icono.innerHTML='⚠️';
+    txt.textContent='No se pudo cargar desde el servidor';
+    hint.textContent='Toca aquí para cargar el archivo manualmente';
   } else if (estado === 'ok') {
-    zona.className   = 'upload-zone loaded';
-    zona.onclick     = null;
-    icono.innerHTML  = '✅';
+    zona.className='upload-zone loaded'; zona.onclick=null;
+    icono.innerHTML='✅';
   }
 }
 
@@ -223,13 +223,14 @@ function procesarExcel(buffer, nombre) {
 
     poblarSelect('f-espec',   [...new Set(DATA.map(d=>d.espec_dest))].filter(Boolean).sort());
     poblarSelect('f-dest',    [...new Set(DATA.map(d=>d.estab_dest))].filter(Boolean).sort());
+    poblarSelect('f-orig',    [...new Set(DATA.map(d=>d.estab_orig))].filter(Boolean).sort());
     poblarSelect('f-entidad', [...new Set(DATA.map(d=>d.entidad))].filter(Boolean).sort());
     poblarSelect('f-tipo',    [...new Set(DATA.map(d=>d.tipo))].filter(Boolean).sort());
 
     document.getElementById('stats-card').style.display   = 'block';
     document.getElementById('filtros-card').style.display = 'block';
 
-    setEstadoCarga('ok');
+    setEstado('ok');
     document.getElementById('upload-txt').textContent  = `${DATA.length} reglas cargadas — ${nombre}`;
     document.getElementById('upload-hint').textContent = 'Datos listos para consultar';
 
@@ -237,7 +238,7 @@ function procesarExcel(buffer, nombre) {
     showToast('✅ ' + DATA.length + ' reglas cargadas');
   } catch(err) {
     showToast('Error: ' + err.message);
-    setEstadoCarga('error');
+    setEstado('error');
   }
 }
 
@@ -267,12 +268,14 @@ function poblarSelect(id, opciones) {
 function filtrar() {
   const fE = document.getElementById('f-espec').value;
   const fD = document.getElementById('f-dest').value;
+  const fO = document.getElementById('f-orig').value;
   const fN = document.getElementById('f-entidad').value;
   const fG = document.getElementById('f-ges').value;
   const fT = document.getElementById('f-tipo').value;
   FILTRADA = DATA.filter(d =>
     (!fE || d.espec_dest === fE) &&
     (!fD || d.estab_dest === fD) &&
+    (!fO || d.estab_orig === fO) &&
     (!fN || d.entidad    === fN) &&
     (!fG || d.ges        === fG) &&
     (!fT || d.tipo       === fT)
@@ -282,7 +285,7 @@ function filtrar() {
 }
 
 function limpiarFiltros() {
-  ['f-espec','f-dest','f-entidad','f-ges','f-tipo'].forEach(id => document.getElementById(id).value = '');
+  ['f-espec','f-dest','f-orig','f-entidad','f-ges','f-tipo'].forEach(id => document.getElementById(id).value = '');
   filtrar();
 }
 
