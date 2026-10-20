@@ -19,7 +19,8 @@ self.addEventListener('fetch', e => {
   // Sin el ?v=... para no acumular una copia de reglas.xlsx por cada visita
   const clave = url.origin === location.origin ? url.origin + url.pathname : req.url;
   e.respondWith(fetch(req).then(resp => {
-    if (resp && resp.ok) {
+    // 'opaque' = respuesta del CDN (otro dominio); se guarda para que la librería funcione sin conexión
+    if (resp && (resp.ok || resp.type === 'opaque')) {
       const clone = resp.clone();
       caches.open(CACHE).then(c => c.put(clave, clone));
     }
