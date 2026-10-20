@@ -295,6 +295,11 @@ function badgeGes(ges) {
   return '';
 }
 
+// Escapa texto antes de insertarlo como HTML (evita que una celda del Excel ejecute código)
+function esc(v) {
+  return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function renderTabla() {
   const cont = document.getElementById('tabla-container');
   const card = document.getElementById('resultado-card');
@@ -318,10 +323,10 @@ function renderTabla() {
 
   let html = '';
   Object.keys(porEspec).sort().forEach(esp => {
-    html += `<div class="espec-block"><div class="espec-titulo">🏥 ${esp}</div>`;
+    html += `<div class="espec-block"><div class="espec-titulo">🏥 ${esc(esp)}</div>`;
     Object.keys(porEspec[esp]).sort().forEach(dest => {
       const filas = porEspec[esp][dest];
-      html += `<div class="dest-header">📍 ${dest} — ${filas.length} regla${filas.length > 1 ? 's' : ''}</div>
+      html += `<div class="dest-header">📍 ${esc(dest)} — ${filas.length} regla${filas.length > 1 ? 's' : ''}</div>
       <div class="tabla-wrap"><table>
         <thead><tr>
           <th>Entidad</th>
@@ -334,12 +339,12 @@ function renderTabla() {
       filas.forEach(d => {
         const rango = `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`;
         html += `<tr>
-          <td>${d.entidad}</td>
-          <td>${d.estab_orig}</td>
-          <td style="white-space:nowrap">${rango}</td>
+          <td>${esc(d.entidad)}</td>
+          <td>${esc(d.estab_orig)}</td>
+          <td style="white-space:nowrap">${esc(rango)}</td>
           <td>${badgeGes(d.ges)}</td>
-          <td>${d.tipo}</td>
-          <td>${d.diagnostico}</td>
+          <td>${esc(d.tipo)}</td>
+          <td>${esc(d.diagnostico)}</td>
         </tr>`;
       });
       html += `</tbody></table></div>`;
