@@ -7,7 +7,7 @@ Fecha: 20 de octubre de 2026. Repositorio: `cmorenoglobal/derivacion-red`.
 - **No es un sitio fácil de atacar.** Es una página estática: no tiene usuarios ni contraseñas, no tiene formularios que envíen datos a ningún servidor, no tiene base de datos y no guarda nada de quien la visita. Lo único que hace es leer `reglas.xlsx` y mostrarlo en tablas.
 - **No hay datos de pacientes ni claves expuestas.** Revisé el Excel (4.539 reglas) y todo el historial de git (7 commits): solo hay reglas de derivación (comunas, establecimientos, especialidades, diagnósticos CIE-10). No aparecen RUT, nombres de pacientes, correos, teléfonos, claves ni tokens.
 - **Para "botarlo" o modificarlo, la vía real es tu cuenta de GitHub**, no el código. Quien entre a tu cuenta puede cambiar las reglas que ve toda la red. Por eso la recomendación más importante es proteger la cuenta (ver punto S1).
-- Corregí o agregué directamente 8 cosas de bajo riesgo (ver tabla). Todas las probé en un navegador Chromium: la página carga las 4.539 reglas, filtra, exporta a Excel y ahora también funciona sin internet.
+- Corregí o agregué directamente 9 cosas de bajo riesgo (ver tabla). Todas las probé en un navegador Chromium: la página carga las 4.539 reglas, filtra, exporta a Excel y ahora también funciona sin internet.
 - Lo que más ayudaría a quienes usan la página en el celular: **no dibujar las 4.539 reglas de una vez** (ver M2). El buscador por diagnóstico (M3) y la prioridad de cada regla (M1) ya están hechos.
 
 ## Lo que ya quedó corregido en esta rama
@@ -22,6 +22,7 @@ Fecha: 20 de octubre de 2026. Repositorio: `cmorenoglobal/derivacion-red`.
 | 6 | Exportar a Excel ya no falla con especialidades vacías, con `/ : ? * [ ]` o con nombres que coinciden en los primeros 31 caracteres | Excel rechaza esos nombres de hoja y la exportación se caía con un error. |
 | 7 | Columna "Prioridad" y orden por prioridad en la tabla y en la exportación | Antes no se veía qué destino es el preferente (ver M1). |
 | 8 | Buscador por diagnóstico (nombre o código CIE-10), con resaltado y opción de incluir reglas generales | Antes había que adivinar la especialidad (ver M3). |
+| 9 | En el celular, cada regla se muestra como tarjeta | Antes había que deslizar la tabla de lado para ver el diagnóstico (ver M5). |
 
 No se cambió ningún dato clínico ni se borró contenido.
 
@@ -114,8 +115,6 @@ La pregunta típica es "¿a dónde derivo una catarata?" y antes había que adiv
 - Se combina con los demás filtros (por ejemplo, buscar "catarata" con el filtro de un CESFAM).
 - **Reglas generales:** 2.343 de las 4.539 reglas no tienen diagnóstico específico y aplican a cualquier diagnóstico de su especialidad. Al buscar, se muestra un aviso con cuántas reglas generales hay en las especialidades encontradas, y una casilla para incluirlas. Así no queda oculto el destino de respaldo.
 
-Pendiente relacionado: en el celular la columna de diagnóstico queda a la derecha y hay que deslizar la tabla para verla (ver M5).
-
 ### M4. Filtros que se ajusten entre sí
 
 Si eliges "Establecimiento derivador = CESFAM X", el menú de especialidades sigue mostrando las 52, aunque X solo tenga reglas en algunas. Es fácil terminar en "Sin resultados". Conviene que cada menú muestre solo las opciones que tienen reglas con los otros filtros ya elegidos.
@@ -123,7 +122,8 @@ Si eliges "Establecimiento derivador = CESFAM X", el menú de especialidades sig
 ### M5. En el celular
 
 - Los filtros quedan debajo de "Estado del archivo" y "Resumen": hay que bajar dos pantallas para empezar a consultar. Se podría poner los filtros primero y achicar el resumen.
-- Las tablas tienen un ancho mínimo de 650 px, así que en el celular hay que deslizar de lado. Una alternativa es mostrar cada regla como una tarjeta en pantallas chicas.
+- **Hecho:** en pantallas de hasta 600 px de ancho, cada regla se muestra como una tarjeta (Prioridad, Entidad, Derivador, Edad, GES, Tipo y, abajo, el diagnóstico con lo buscado resaltado). Ya no hay que deslizar la tabla de lado. En computador y tablet se mantiene la tabla.
+- Algunos diagnósticos son listas muy largas (hasta 5.000 caracteres) y en el celular ocupan varias pantallas. Se podría mostrar solo el comienzo con un botón "ver todo".
 - Guardar los filtros en la dirección (por ejemplo `?espec=OFTALMOLOGIA&orig=...`) permitiría compartir un enlace con la consulta ya hecha.
 
 ### M6. Accesibilidad (pendientes)

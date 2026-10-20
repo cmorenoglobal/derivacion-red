@@ -68,6 +68,8 @@ thead th{background:var(--verde-osc);color:white;padding:9px 12px;text-align:lef
 tbody tr:nth-child(even){background:var(--verde-clar);}
 tbody tr:hover{background:var(--azul-clar);}
 td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-height:1.4;}
+td.c-prio{text-align:center;}
+td.c-edad{white-space:nowrap;}
 .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
 .badge-ges{background:#D1FAE5;color:#065F46;}
 .badge-noges{background:#FEF3C7;color:#92400E;}
@@ -78,6 +80,23 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:white;padding:12px 24px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:calc(100% - 32px);text-align:center;}
 .toast.show{opacity:1;}
 @media(max-width:600px){.header h1{font-size:15px;}.main{padding:12px 10px;}.btn{padding:9px 13px;font-size:12px;}}
+/* Celular: cada regla se muestra como tarjeta en vez de fila de tabla */
+@media(max-width:600px){
+  .tabla-wrap{overflow-x:visible;background:#f6f9fc;padding:8px;}
+  table,tbody,tr,td{display:block;width:100%;}
+  table{min-width:0;font-size:13px;}
+  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+  tbody tr,tbody tr:nth-child(even),tbody tr:hover{background:white;}
+  tbody tr{border:1px solid #dde3ed;border-radius:10px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+  tbody tr:last-child{margin-bottom:0;}
+  td{display:flex;gap:10px;padding:3px 0;border:none;}
+  td:empty{display:none;}
+  td::before{content:attr(data-label);flex:0 0 96px;font-size:11px;font-weight:600;color:var(--azul-osc);padding-top:1px;}
+  td.c-prio{text-align:left;font-weight:700;}
+  td.c-edad{white-space:normal;}
+  td.c-diag{display:block;margin-top:4px;padding-top:6px;border-top:1px solid #eaeff5;}
+  td.c-diag::before{display:block;margin-bottom:2px;}
+}
 </style>
 </head>
 <body>
@@ -432,14 +451,15 @@ function renderTabla() {
         </tr></thead><tbody>`;
       filas.forEach(d => {
         const rango = `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`;
+        // data-label: título de cada dato cuando la fila se muestra como tarjeta en el celular
         html += `<tr>
-          <td style="text-align:center">${esc(d.prioridad)}</td>
-          <td>${esc(d.entidad)}</td>
-          <td>${esc(d.estab_orig)}</td>
-          <td style="white-space:nowrap">${esc(rango)}</td>
-          <td>${badgeGes(d.ges)}</td>
-          <td>${esc(d.tipo)}</td>
-          <td>${d.general ? esc(d.diagnostico) : resaltar(d.diagnostico, terminos)}</td>
+          <td class="c-prio" data-label="Prioridad">${esc(d.prioridad)}</td>
+          <td data-label="Entidad">${esc(d.entidad)}</td>
+          <td data-label="Derivador">${esc(d.estab_orig)}</td>
+          <td class="c-edad" data-label="Edad">${esc(rango)}</td>
+          <td data-label="GES">${badgeGes(d.ges)}</td>
+          <td data-label="Tipo">${esc(d.tipo)}</td>
+          <td class="c-diag" data-label="Diagnóstico(s)">${d.general ? esc(d.diagnostico) : resaltar(d.diagnostico, terminos)}</td>
         </tr>`;
       });
       html += `</tbody></table></div>`;
