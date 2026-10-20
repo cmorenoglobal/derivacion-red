@@ -70,6 +70,8 @@ tbody tr:hover{background:var(--azul-clar);}
 td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-height:1.4;}
 td.c-prio{text-align:center;}
 td.c-edad{white-space:nowrap;}
+.diag-texto.recortado{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.btn-vertodo{margin-top:4px;padding:4px 0;background:none;border:none;color:var(--azul-med);font-size:12px;font-weight:600;text-decoration:underline;cursor:pointer;}
 .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
 .badge-ges{background:#D1FAE5;color:#065F46;}
 .badge-noges{background:#FEF3C7;color:#92400E;}
@@ -181,6 +183,16 @@ td.c-edad{white-space:nowrap;}
 
 <script>
 let DATA = [], FILTRADA = [], OCULTAS_GENERALES = 0;
+const LARGO_DIAG = 300;  // diagnósticos más largos que esto se muestran recortados con "Ver todo"
+
+// Botones "Ver todo" / "Ver menos" de los diagnósticos largos (un solo listener para toda la tabla)
+document.getElementById('tabla-container').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-vertodo');
+  if (!btn) return;
+  const abierto = !btn.previousElementSibling.classList.toggle('recortado');
+  btn.setAttribute('aria-expanded', abierto);
+  btn.textContent = abierto ? 'Ver menos' : btn.dataset.etiqueta;
+});
 
 window.addEventListener('load', cargarDesdeServidor);
 
@@ -407,6 +419,20 @@ function resaltar(texto, terminos) {
   return html + (abierto ? '</mark>' : '');
 }
 
+// Celda de diagnóstico: los textos largos se recortan a 4 líneas con un botón para ver todo
+function celdaDiagnostico(d, terminos) {
+  const html = d.general ? esc(d.diagnostico) : resaltar(d.diagnostico, terminos);
+  if (d.diagnostico.length <= LARGO_DIAG) return html;
+  const items = d.diagnostico.split(' , ');
+  let etiqueta = items.length > 1 ? `Ver los ${items.length} diagnósticos` : 'Ver todo';
+  if (terminos.length && !d.general) {
+    const coinciden = items.filter(it => { const n = normalizar(it); return terminos.some(t => n.includes(t)); }).length;
+    if (coinciden) etiqueta += ` (${coinciden} coincide${coinciden !== 1 ? 'n' : ''})`;
+  }
+  return `<div class="diag-texto recortado">${html}</div>` +
+    `<button type="button" class="btn-vertodo" aria-expanded="false" data-etiqueta="${etiqueta}">${etiqueta}</button>`;
+}
+
 function renderTabla() {
   const cont = document.getElementById('tabla-container');
   const card = document.getElementById('resultado-card');
@@ -459,7 +485,7 @@ function renderTabla() {
           <td class="c-edad" data-label="Edad">${esc(rango)}</td>
           <td data-label="GES">${badgeGes(d.ges)}</td>
           <td data-label="Tipo">${esc(d.tipo)}</td>
-          <td class="c-diag" data-label="Diagnóstico(s)">${d.general ? esc(d.diagnostico) : resaltar(d.diagnostico, terminos)}</td>
+          <td class="c-diag" data-label="Diagnóstico(s)">${celdaDiagnostico(d, terminos)}</td>
         </tr>`;
       });
       html += `</tbody></table></div>`;

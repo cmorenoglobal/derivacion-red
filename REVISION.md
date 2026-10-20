@@ -7,7 +7,7 @@ Fecha: 20 de octubre de 2026. Repositorio: `cmorenoglobal/derivacion-red`.
 - **No es un sitio fácil de atacar.** Es una página estática: no tiene usuarios ni contraseñas, no tiene formularios que envíen datos a ningún servidor, no tiene base de datos y no guarda nada de quien la visita. Lo único que hace es leer `reglas.xlsx` y mostrarlo en tablas.
 - **No hay datos de pacientes ni claves expuestas.** Revisé el Excel (4.539 reglas) y todo el historial de git (7 commits): solo hay reglas de derivación (comunas, establecimientos, especialidades, diagnósticos CIE-10). No aparecen RUT, nombres de pacientes, correos, teléfonos, claves ni tokens.
 - **Para "botarlo" o modificarlo, la vía real es tu cuenta de GitHub**, no el código. Quien entre a tu cuenta puede cambiar las reglas que ve toda la red. Por eso la recomendación más importante es proteger la cuenta (ver punto S1).
-- Corregí o agregué directamente 9 cosas de bajo riesgo (ver tabla). Todas las probé en un navegador Chromium: la página carga las 4.539 reglas, filtra, exporta a Excel y ahora también funciona sin internet.
+- Corregí o agregué directamente 10 cosas de bajo riesgo (ver tabla). Todas las probé en un navegador Chromium: la página carga las 4.539 reglas, filtra, exporta a Excel y ahora también funciona sin internet.
 - Lo que más ayudaría a quienes usan la página en el celular: **no dibujar las 4.539 reglas de una vez** (ver M2). El buscador por diagnóstico (M3) y la prioridad de cada regla (M1) ya están hechos.
 
 ## Lo que ya quedó corregido en esta rama
@@ -23,6 +23,7 @@ Fecha: 20 de octubre de 2026. Repositorio: `cmorenoglobal/derivacion-red`.
 | 7 | Columna "Prioridad" y orden por prioridad en la tabla y en la exportación | Antes no se veía qué destino es el preferente (ver M1). |
 | 8 | Buscador por diagnóstico (nombre o código CIE-10), con resaltado y opción de incluir reglas generales | Antes había que adivinar la especialidad (ver M3). |
 | 9 | En el celular, cada regla se muestra como tarjeta | Antes había que deslizar la tabla de lado para ver el diagnóstico (ver M5). |
+| 10 | Botón "Ver todo" para diagnósticos largos | Algunas reglas tienen listas de diagnósticos que ocupaban varias pantallas (ver M5). |
 
 No se cambió ningún dato clínico ni se borró contenido.
 
@@ -123,7 +124,7 @@ Si eliges "Establecimiento derivador = CESFAM X", el menú de especialidades sig
 
 - Los filtros quedan debajo de "Estado del archivo" y "Resumen": hay que bajar dos pantallas para empezar a consultar. Se podría poner los filtros primero y achicar el resumen.
 - **Hecho:** en pantallas de hasta 600 px de ancho, cada regla se muestra como una tarjeta (Prioridad, Entidad, Derivador, Edad, GES, Tipo y, abajo, el diagnóstico con lo buscado resaltado). Ya no hay que deslizar la tabla de lado. En computador y tablet se mantiene la tabla.
-- Algunos diagnósticos son listas muy largas (hasta 5.000 caracteres) y en el celular ocupan varias pantallas. Se podría mostrar solo el comienzo con un botón "ver todo".
+- **Hecho:** los diagnósticos de más de 300 caracteres (659 reglas, algunas con listas de hasta 5.000 caracteres) se muestran recortados a 4 líneas, con un botón "Ver los N diagnósticos". Al buscar, el botón dice cuántos coinciden, por ejemplo "(1 coincide)", porque la coincidencia puede quedar en la parte oculta. "Ver menos" vuelve a recortar. Funciona en celular y computador, y con teclado.
 - Guardar los filtros en la dirección (por ejemplo `?espec=OFTALMOLOGIA&orig=...`) permitiría compartir un enlace con la consulta ya hecha.
 
 ### M6. Accesibilidad (pendientes)
