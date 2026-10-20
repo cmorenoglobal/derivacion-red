@@ -2,6 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<!-- Política de seguridad: solo permite scripts propios y de cdnjs; bloquea plugins, <base> y envíos de formularios -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1F4E79">
 <meta name="description" content="Gestor de Reglas de Derivación — Red Asistencial SSVSA">
@@ -36,6 +39,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:var(--text
 .filtro-group label{font-size:12px;font-weight:600;color:var(--azul-osc);display:block;margin-bottom:4px;}
 .filtro-group select{width:100%;padding:9px 12px;border:1.5px solid #d0d8e8;border-radius:8px;font-size:13px;background:white;color:var(--texto);outline:none;}
 .filtro-group select:focus{border-color:var(--azul-med);}
+.buscador{margin-bottom:14px;}
+.buscador label{font-size:12px;font-weight:600;color:var(--azul-osc);display:block;margin-bottom:4px;}
+.buscador input[type=search]{width:100%;padding:10px 12px;border:1.5px solid #d0d8e8;border-radius:8px;font-size:16px;color:var(--texto);}
+.buscador input[type=search]:focus{border-color:var(--azul-med);outline:2px solid var(--azul-clar);}
+.buscador .check{display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:400;color:var(--texto-sec);margin-top:8px;cursor:pointer;}
+.buscador .check input{margin-top:2px;width:16px;height:16px;flex-shrink:0;}
+.aviso-generales{font-size:12px;color:#92400E;background:#FEF3C7;border-radius:8px;padding:8px 12px;margin-bottom:12px;}
+mark{background:#FDE68A;color:inherit;padding:0 1px;border-radius:2px;}
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
 .btn{padding:10px 20px;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;}
 .btn-primary{background:var(--azul-osc);color:white;}
@@ -57,6 +68,10 @@ thead th{background:var(--verde-osc);color:white;padding:9px 12px;text-align:lef
 tbody tr:nth-child(even){background:var(--verde-clar);}
 tbody tr:hover{background:var(--azul-clar);}
 td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-height:1.4;}
+td.c-prio{text-align:center;}
+td.c-edad{white-space:nowrap;}
+.diag-texto.recortado{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.btn-vertodo{margin-top:4px;padding:4px 0;background:none;border:none;color:var(--azul-med);font-size:12px;font-weight:600;text-decoration:underline;cursor:pointer;}
 .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
 .badge-ges{background:#D1FAE5;color:#065F46;}
 .badge-noges{background:#FEF3C7;color:#92400E;}
@@ -64,9 +79,26 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 .empty-icon{font-size:44px;margin-bottom:12px;}
 .spinner{width:32px;height:32px;border:4px solid var(--azul-clar);border-top-color:var(--azul-med);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:white;padding:12px 24px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:white;padding:12px 24px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:calc(100% - 32px);text-align:center;}
 .toast.show{opacity:1;}
 @media(max-width:600px){.header h1{font-size:15px;}.main{padding:12px 10px;}.btn{padding:9px 13px;font-size:12px;}}
+/* Celular: cada regla se muestra como tarjeta en vez de fila de tabla */
+@media(max-width:600px){
+  .tabla-wrap{overflow-x:visible;background:#f6f9fc;padding:8px;}
+  table,tbody,tr,td{display:block;width:100%;}
+  table{min-width:0;font-size:13px;}
+  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+  tbody tr,tbody tr:nth-child(even),tbody tr:hover{background:white;}
+  tbody tr{border:1px solid #dde3ed;border-radius:10px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+  tbody tr:last-child{margin-bottom:0;}
+  td{display:flex;gap:10px;padding:3px 0;border:none;}
+  td:empty{display:none;}
+  td::before{content:attr(data-label);flex:0 0 96px;font-size:11px;font-weight:600;color:var(--azul-osc);padding-top:1px;}
+  td.c-prio{text-align:left;font-weight:700;}
+  td.c-edad{white-space:normal;}
+  td.c-diag{display:block;margin-top:4px;padding-top:6px;border-top:1px solid #eaeff5;}
+  td.c-diag::before{display:block;margin-bottom:2px;}
+}
 </style>
 </head>
 <body>
@@ -108,22 +140,28 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 
   <div class="card" id="filtros-card" style="display:none">
     <div class="card-title">🔍 Filtros</div>
+    <div class="buscador">
+      <label for="f-diag">Buscar diagnóstico (nombre o código CIE-10)</label>
+      <input type="search" id="f-diag" placeholder="Ej: catarata, H25, diabetes" autocomplete="off" oninput="buscarConPausa()">
+      <label class="check"><input type="checkbox" id="f-generales" onchange="filtrar()">
+        <span>Incluir también las reglas generales (sin diagnóstico específico) de las especialidades encontradas</span></label>
+    </div>
     <div class="filtros-grid">
-      <div class="filtro-group"><label>Especialidad Destino</label>
+      <div class="filtro-group"><label for="f-espec">Especialidad Destino</label>
         <select id="f-espec" onchange="filtrar()"><option value="">Todas</option></select></div>
-      <div class="filtro-group"><label>Establecimiento Destino</label>
+      <div class="filtro-group"><label for="f-dest">Establecimiento Destino</label>
         <select id="f-dest" onchange="filtrar()"><option value="">Todos</option></select></div>
-      <div class="filtro-group"><label>Establecimiento Derivador</label>
+      <div class="filtro-group"><label for="f-orig">Establecimiento Derivador</label>
         <select id="f-orig" onchange="filtrar()"><option value="">Todos</option></select></div>
-      <div class="filtro-group"><label>Entidad</label>
+      <div class="filtro-group"><label for="f-entidad">Entidad</label>
         <select id="f-entidad" onchange="filtrar()"><option value="">Todas</option></select></div>
-      <div class="filtro-group"><label>GES / No GES</label>
+      <div class="filtro-group"><label for="f-ges">GES / No GES</label>
         <select id="f-ges" onchange="filtrar()">
           <option value="">Todos</option>
           <option value="GES">GES</option>
           <option value="NO GES">No GES</option>
         </select></div>
-      <div class="filtro-group"><label>Tipo de Derivación</label>
+      <div class="filtro-group"><label for="f-tipo">Tipo de Derivación</label>
         <select id="f-tipo" onchange="filtrar()"><option value="">Todos</option></select></div>
     </div>
     <div class="btn-row">
@@ -141,10 +179,20 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-let DATA = [], FILTRADA = [];
+let DATA = [], FILTRADA = [], OCULTAS_GENERALES = 0;
+const LARGO_DIAG = 300;  // diagnósticos más largos que esto se muestran recortados con "Ver todo"
+
+// Botones "Ver todo" / "Ver menos" de los diagnósticos largos (un solo listener para toda la tabla)
+document.getElementById('tabla-container').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-vertodo');
+  if (!btn) return;
+  const abierto = !btn.previousElementSibling.classList.toggle('recortado');
+  btn.setAttribute('aria-expanded', abierto);
+  btn.textContent = abierto ? 'Ver menos' : btn.dataset.etiqueta;
+});
 
 window.addEventListener('load', cargarDesdeServidor);
 
@@ -166,6 +214,11 @@ function setEstado(estado) {
   const icono = document.getElementById('upload-icon');
   const txt   = document.getElementById('upload-txt');
   const hint  = document.getElementById('upload-hint');
+  // Solo en estado de error la zona actúa como botón (también con teclado)
+  const clicable = estado === 'error';
+  zona.tabIndex = clicable ? 0 : -1;
+  if (clicable) zona.setAttribute('role', 'button'); else zona.removeAttribute('role');
+  zona.onkeydown = clicable ? ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); zona.click(); } } : null;
   if (estado === 'cargando') {
     zona.className='upload-zone loaded'; zona.onclick=null;
     icono.innerHTML='<div class="spinner"></div>';
@@ -202,6 +255,7 @@ function procesarExcel(buffer, nombre) {
       const diag = String(r[11]||'').trim().replace(/^,+/,'').trim();
       const ges  = String(r[12]||'').trim().toUpperCase();
       DATA.push({
+        prioridad:  String(r[1] ||'').trim(),
         entidad:    String(r[2] ||'').trim(),
         estab_orig: String(r[3] ||'').trim(),
         estab_dest: String(r[5] ||'').trim(),
@@ -209,6 +263,8 @@ function procesarExcel(buffer, nombre) {
         edad_desde: String(r[9] ||'').trim(),
         edad_hasta: String(r[10]||'').trim(),
         diagnostico: diag || 'Sin diagnóstico específico',
+        general:    !diag,
+        diag_norm:  normalizar(diag),
         ges:  ges,
         tipo: String(r[13]||'').trim(),
       });
@@ -265,6 +321,21 @@ function poblarSelect(id, opciones) {
   if (val) sel.value = val;
 }
 
+// Mayúsculas, sin tildes ni puntos: "catarata" encuentra "CATARATA" y "H25.1" encuentra "(H251)"
+function normalizar(t) {
+  return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\./g, '');
+}
+
+function terminosBusqueda() {
+  return normalizar(document.getElementById('f-diag').value).split(/\s+/).filter(Boolean);
+}
+
+let pausaBusqueda;
+function buscarConPausa() {
+  clearTimeout(pausaBusqueda);
+  pausaBusqueda = setTimeout(filtrar, 250);
+}
+
 function filtrar() {
   const fE = document.getElementById('f-espec').value;
   const fD = document.getElementById('f-dest').value;
@@ -280,13 +351,37 @@ function filtrar() {
     (!fG || d.ges        === fG) &&
     (!fT || d.tipo       === fT)
   );
+  // Buscador: todas las palabras deben aparecer en el diagnóstico de la regla
+  const terminos = terminosBusqueda();
+  OCULTAS_GENERALES = 0;
+  if (terminos.length) {
+    const coinciden = FILTRADA.filter(d => !d.general && terminos.every(t => d.diag_norm.includes(t)));
+    const especs = new Set(coinciden.map(d => d.espec_dest));
+    const generales = FILTRADA.filter(d => d.general && especs.has(d.espec_dest));
+    if (document.getElementById('f-generales').checked) FILTRADA = coinciden.concat(generales);
+    else { FILTRADA = coinciden; OCULTAS_GENERALES = generales.length; }
+  }
   renderTabla();
   document.getElementById('btn-export').disabled = !FILTRADA.length;
 }
 
 function limpiarFiltros() {
-  ['f-espec','f-dest','f-orig','f-entidad','f-ges','f-tipo'].forEach(id => document.getElementById(id).value = '');
+  ['f-espec','f-dest','f-orig','f-entidad','f-ges','f-tipo','f-diag'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-generales').checked = false;
   filtrar();
+}
+
+// Orden por prioridad (1 primero, numérica); sin prioridad al final. Empates: entidad y derivador
+function porPrioridad(a, b) {
+  const pa = parseInt(a.prioridad), pb = parseInt(b.prioridad);
+  const na = isNaN(pa) ? Infinity : pa, nb = isNaN(pb) ? Infinity : pb;
+  return na - nb || a.entidad.localeCompare(b.entidad) || a.estab_orig.localeCompare(b.estab_orig);
+}
+
+// Destinos de una especialidad: primero el que tiene la prioridad más alta (número menor), luego por nombre
+function destinosPorPrioridad(grupo) {
+  const minimo = dest => Math.min(...grupo[dest].map(d => { const p = parseInt(d.prioridad); return isNaN(p) ? Infinity : p; }));
+  return Object.keys(grupo).sort((a, b) => minimo(a) - minimo(b) || a.localeCompare(b));
 }
 
 function badgeGes(ges) {
@@ -295,19 +390,67 @@ function badgeGes(ges) {
   return '';
 }
 
+// Escapa texto antes de insertarlo como HTML (evita que una celda del Excel ejecute código)
+function esc(v) {
+  return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Escapa el texto y marca con <mark> las palabras buscadas (ignorando tildes, mayúsculas y puntos)
+function resaltar(texto, terminos) {
+  if (!terminos.length) return esc(texto);
+  let norm = '';
+  const pos = [];  // pos[i] = índice en el texto original del carácter i de norm
+  for (let i = 0; i < texto.length; i++) {
+    for (const ch of normalizar(texto[i])) { norm += ch; pos.push(i); }
+  }
+  const marcas = new Array(texto.length + 1).fill(0);
+  terminos.forEach(t => {
+    for (let k = norm.indexOf(t); k !== -1; k = norm.indexOf(t, k + 1)) {
+      marcas[pos[k]]++; marcas[pos[k + t.length - 1] + 1]--;
+    }
+  });
+  let html = '', dentro = 0, abierto = false;
+  for (let i = 0; i < texto.length; i++) {
+    dentro += marcas[i];
+    if (dentro > 0 && !abierto) { html += '<mark>'; abierto = true; }
+    if (dentro <= 0 && abierto) { html += '</mark>'; abierto = false; }
+    html += esc(texto[i]);
+  }
+  return html + (abierto ? '</mark>' : '');
+}
+
+// Celda de diagnóstico: los textos largos se recortan a 4 líneas con un botón para ver todo
+function celdaDiagnostico(d, terminos) {
+  const html = d.general ? esc(d.diagnostico) : resaltar(d.diagnostico, terminos);
+  if (d.diagnostico.length <= LARGO_DIAG) return html;
+  const items = d.diagnostico.split(' , ');
+  let etiqueta = items.length > 1 ? `Ver los ${items.length} diagnósticos` : 'Ver todo';
+  if (terminos.length && !d.general) {
+    const coinciden = items.filter(it => { const n = normalizar(it); return terminos.some(t => n.includes(t)); }).length;
+    if (coinciden) etiqueta += ` (${coinciden} coincide${coinciden !== 1 ? 'n' : ''})`;
+  }
+  return `<div class="diag-texto recortado">${html}</div>` +
+    `<button type="button" class="btn-vertodo" aria-expanded="false" data-etiqueta="${etiqueta}">${etiqueta}</button>`;
+}
+
 function renderTabla() {
   const cont = document.getElementById('tabla-container');
   const card = document.getElementById('resultado-card');
   const info = document.getElementById('result-info');
   card.style.display = 'block';
 
+  const terminos = terminosBusqueda();
   if (!FILTRADA.length) {
     info.innerHTML = '';
-    cont.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>Sin resultados con los filtros aplicados</div></div>';
+    const ayuda = terminos.length
+      ? '<div style="font-size:12px;margin-top:6px">Ninguna regla con diagnóstico específico coincide. Prueba con otra palabra o el código CIE-10, o elige la especialidad: las reglas generales aplican a cualquier diagnóstico.</div>'
+      : '';
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>Sin resultados con los filtros aplicados</div>' + ayuda + '</div>';
     return;
   }
 
-  info.innerHTML = `Mostrando <strong>${FILTRADA.length}</strong> regla${FILTRADA.length !== 1 ? 's' : ''}`;
+  info.innerHTML = `Mostrando <strong>${FILTRADA.length}</strong> regla${FILTRADA.length !== 1 ? 's' : ''}` +
+    (OCULTAS_GENERALES ? `<div class="aviso-generales">Hay ${OCULTAS_GENERALES} regla${OCULTAS_GENERALES !== 1 ? 's' : ''} general${OCULTAS_GENERALES !== 1 ? 'es' : ''} (sin diagnóstico específico) en estas especialidades que no se muestran. Marca la casilla de arriba para verlas.</div>` : '');
 
   const porEspec = {};
   FILTRADA.forEach(d => {
@@ -318,12 +461,13 @@ function renderTabla() {
 
   let html = '';
   Object.keys(porEspec).sort().forEach(esp => {
-    html += `<div class="espec-block"><div class="espec-titulo">🏥 ${esp}</div>`;
-    Object.keys(porEspec[esp]).sort().forEach(dest => {
-      const filas = porEspec[esp][dest];
-      html += `<div class="dest-header">📍 ${dest} — ${filas.length} regla${filas.length > 1 ? 's' : ''}</div>
+    html += `<div class="espec-block"><div class="espec-titulo">🏥 ${esc(esp)}</div>`;
+    destinosPorPrioridad(porEspec[esp]).forEach(dest => {
+      const filas = porEspec[esp][dest].slice().sort(porPrioridad);
+      html += `<div class="dest-header">📍 ${esc(dest)} — ${filas.length} regla${filas.length > 1 ? 's' : ''}</div>
       <div class="tabla-wrap"><table>
         <thead><tr>
+          <th>Prioridad</th>
           <th>Entidad</th>
           <th>Establecimiento Derivador</th>
           <th>Rango de Edad</th>
@@ -333,13 +477,15 @@ function renderTabla() {
         </tr></thead><tbody>`;
       filas.forEach(d => {
         const rango = `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`;
+        // data-label: título de cada dato cuando la fila se muestra como tarjeta en el celular
         html += `<tr>
-          <td>${d.entidad}</td>
-          <td>${d.estab_orig}</td>
-          <td style="white-space:nowrap">${rango}</td>
-          <td>${badgeGes(d.ges)}</td>
-          <td>${d.tipo}</td>
-          <td>${d.diagnostico}</td>
+          <td class="c-prio" data-label="Prioridad">${esc(d.prioridad)}</td>
+          <td data-label="Entidad">${esc(d.entidad)}</td>
+          <td data-label="Derivador">${esc(d.estab_orig)}</td>
+          <td class="c-edad" data-label="Edad">${esc(rango)}</td>
+          <td data-label="GES">${badgeGes(d.ges)}</td>
+          <td data-label="Tipo">${esc(d.tipo)}</td>
+          <td class="c-diag" data-label="Diagnóstico(s)">${celdaDiagnostico(d, terminos)}</td>
         </tr>`;
       });
       html += `</tbody></table></div>`;
@@ -358,21 +504,27 @@ function exportar() {
     if (!porEspec[d.espec_dest][d.estab_dest]) porEspec[d.espec_dest][d.estab_dest] = [];
     porEspec[d.espec_dest][d.estab_dest].push(d);
   });
+  const usados = new Set();
   Object.keys(porEspec).sort().forEach(esp => {
-    const rows = [['Especialidad Destino','Establecimiento Destino','Entidad',
+    // Excel no acepta hojas sin nombre, repetidas, de más de 31 caracteres o con : \ / ? * [ ]
+    const base = esp.replace(/[:\\\/?*\[\]]/g, ' ').trim() || 'Sin especialidad';
+    let hoja = base.substring(0, 31), n = 2;
+    while (usados.has(hoja.toLowerCase())) hoja = `${base.substring(0, 25)} (${n++})`;
+    usados.add(hoja.toLowerCase());
+    const rows = [['Especialidad Destino','Establecimiento Destino','Prioridad','Entidad',
                    'Establecimiento Derivador','Rango de Edad','GES / No GES',
                    'Tipo de Derivación','Diagnóstico(s)']];
-    Object.keys(porEspec[esp]).sort().forEach(dest => {
-      porEspec[esp][dest].forEach(d => {
-        rows.push([esp, dest, d.entidad, d.estab_orig,
+    destinosPorPrioridad(porEspec[esp]).forEach(dest => {
+      porEspec[esp][dest].slice().sort(porPrioridad).forEach(d => {
+        rows.push([esp, dest, d.prioridad, d.entidad, d.estab_orig,
           `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`,
           d.ges, d.tipo, d.diagnostico]);
       });
       rows.push([]);
     });
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [20,35,18,35,20,12,20,55].map(w => ({wch:w}));
-    XLSX.utils.book_append_sheet(wb, ws, esp.substring(0, 31));
+    ws['!cols'] = [20,35,10,18,35,20,12,20,55].map(w => ({wch:w}));
+    XLSX.utils.book_append_sheet(wb, ws, hoja);
   });
   XLSX.writeFile(wb, 'Derivaciones_Filtradas.xlsx');
   showToast('✅ Excel exportado');
