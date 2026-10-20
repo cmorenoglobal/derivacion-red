@@ -7,8 +7,8 @@ Fecha: 20 de octubre de 2026. Repositorio: `cmorenoglobal/derivacion-red`.
 - **No es un sitio fácil de atacar.** Es una página estática: no tiene usuarios ni contraseñas, no tiene formularios que envíen datos a ningún servidor, no tiene base de datos y no guarda nada de quien la visita. Lo único que hace es leer `reglas.xlsx` y mostrarlo en tablas.
 - **No hay datos de pacientes ni claves expuestas.** Revisé el Excel (4.539 reglas) y todo el historial de git (7 commits): solo hay reglas de derivación (comunas, establecimientos, especialidades, diagnósticos CIE-10). No aparecen RUT, nombres de pacientes, correos, teléfonos, claves ni tokens.
 - **Para "botarlo" o modificarlo, la vía real es tu cuenta de GitHub**, no el código. Quien entre a tu cuenta puede cambiar las reglas que ve toda la red. Por eso la recomendación más importante es proteger la cuenta (ver punto S1).
-- Corregí directamente 6 cosas de bajo riesgo (ver tabla). Todas las probé en un navegador Chromium: la página carga las 4.539 reglas, filtra, exporta a Excel y ahora también funciona sin internet.
-- Lo que más ayudaría a quienes usan la página en el celular: **buscador por diagnóstico, mostrar la prioridad de cada regla y no dibujar las 4.539 reglas de una vez** (ver mejoras M1 a M3).
+- Corregí directamente 7 cosas de bajo riesgo (ver tabla). Todas las probé en un navegador Chromium: la página carga las 4.539 reglas, filtra, exporta a Excel y ahora también funciona sin internet.
+- Lo que más ayudaría a quienes usan la página en el celular: **buscador por diagnóstico y no dibujar las 4.539 reglas de una vez** (ver mejoras M2 y M3). La prioridad de cada regla ya se muestra y ordena (M1).
 
 ## Lo que ya quedó corregido en esta rama
 
@@ -20,6 +20,7 @@ Fecha: 20 de octubre de 2026. Repositorio: `cmorenoglobal/derivacion-red`.
 | 4 | El service worker guarda también la librería del CDN | Sin eso, sin internet la página abría pero no podía leer el Excel. Ahora sin conexión se cargan las reglas de la última visita. |
 | 5 | Accesibilidad: `<label for>` en los filtros, aviso anunciado a lectores de pantalla, zona de "cargar archivo manualmente" usable con teclado | Lectores de pantalla y uso sin mouse. |
 | 6 | Exportar a Excel ya no falla con especialidades vacías, con `/ : ? * [ ]` o con nombres que coinciden en los primeros 31 caracteres | Excel rechaza esos nombres de hoja y la exportación se caía con un error. |
+| 7 | Columna "Prioridad" y orden por prioridad en la tabla y en la exportación | Antes no se veía qué destino es el preferente (ver M1). |
 
 No se cambió ningún dato clínico ni se borró contenido.
 
@@ -85,11 +86,15 @@ Clasificación: **Alto** = conviene hacerlo ya; **Medio** = hacerlo pronto; **Ba
 
 ## Parte 2 — Mejoras
 
-### M1. Mostrar la **prioridad** de cada regla — importante (clínico)
+### M1. Mostrar la **prioridad** de cada regla — **hecho**
 
-La columna "Prioridad" del Excel (valores 1 a 6+) **no se muestra ni se usa para ordenar**. Un mismo CESFAM puede tener varias reglas para una especialidad con distinta prioridad (2.404 reglas con prioridad 1, 1.030 con prioridad 2, etc.), y en la página todas aparecen como equivalentes. Recomiendo agregar la columna y ordenar por ella. No lo hice porque cambia cómo se presenta información clínica; conviene que lo decida quien conoce las reglas.
+La columna "Prioridad" del Excel (valores 1 a 20 o más) antes no se mostraba ni se usaba para ordenar. Las prioridades se aplican por establecimiento derivador y especialidad (por ejemplo, CESFAM Algarrobo en Cirugía General: prioridad 1 hacia el Hospital Eduardo Pereira para diagnósticos específicos, prioridad 2 hacia el Hospital Claudio Vicuña en general). Ahora:
 
-Tampoco se muestran "Procedimiento(s)" (543 reglas lo tienen), "Origen Centro" y "Sexo" (hoy todas dicen "Todos", pero si algún día se usa, la página lo ignoraría).
+- La tabla tiene una columna "Prioridad" y las filas se ordenan por ella (1 primero).
+- Dentro de cada especialidad, los hospitales de destino se ordenan por su prioridad más alta (y por nombre si empatan). Así, al filtrar por un derivador, el destino preferente aparece primero.
+- La exportación a Excel incluye la columna y usa el mismo orden.
+
+Pendiente: tampoco se muestran "Procedimiento(s)" (543 reglas lo tienen), "Origen Centro" y "Sexo" (hoy todas dicen "Todos", pero si algún día se usa, la página lo ignoraría).
 
 ### M2. No dibujar las 4.539 reglas de una vez — rendimiento en celular
 

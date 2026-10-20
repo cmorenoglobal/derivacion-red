@@ -210,6 +210,7 @@ function procesarExcel(buffer, nombre) {
       const diag = String(r[11]||'').trim().replace(/^,+/,'').trim();
       const ges  = String(r[12]||'').trim().toUpperCase();
       DATA.push({
+        prioridad:  String(r[1] ||'').trim(),
         entidad:    String(r[2] ||'').trim(),
         estab_orig: String(r[3] ||'').trim(),
         estab_dest: String(r[5] ||'').trim(),
@@ -297,6 +298,19 @@ function limpiarFiltros() {
   filtrar();
 }
 
+// Orden por prioridad (1 primero, numérica); sin prioridad al final. Empates: entidad y derivador
+function porPrioridad(a, b) {
+  const pa = parseInt(a.prioridad), pb = parseInt(b.prioridad);
+  const na = isNaN(pa) ? Infinity : pa, nb = isNaN(pb) ? Infinity : pb;
+  return na - nb || a.entidad.localeCompare(b.entidad) || a.estab_orig.localeCompare(b.estab_orig);
+}
+
+// Destinos de una especialidad: primero el que tiene la prioridad más alta (número menor), luego por nombre
+function destinosPorPrioridad(grupo) {
+  const minimo = dest => Math.min(...grupo[dest].map(d => { const p = parseInt(d.prioridad); return isNaN(p) ? Infinity : p; }));
+  return Object.keys(grupo).sort((a, b) => minimo(a) - minimo(b) || a.localeCompare(b));
+}
+
 function badgeGes(ges) {
   if (ges === 'GES')    return `<span class="badge badge-ges">GES</span>`;
   if (ges === 'NO GES') return `<span class="badge badge-noges">No GES</span>`;
@@ -332,11 +346,12 @@ function renderTabla() {
   let html = '';
   Object.keys(porEspec).sort().forEach(esp => {
     html += `<div class="espec-block"><div class="espec-titulo">🏥 ${esc(esp)}</div>`;
-    Object.keys(porEspec[esp]).sort().forEach(dest => {
-      const filas = porEspec[esp][dest];
+    destinosPorPrioridad(porEspec[esp]).forEach(dest => {
+      const filas = porEspec[esp][dest].slice().sort(porPrioridad);
       html += `<div class="dest-header">📍 ${esc(dest)} — ${filas.length} regla${filas.length > 1 ? 's' : ''}</div>
       <div class="tabla-wrap"><table>
         <thead><tr>
+          <th>Prioridad</th>
           <th>Entidad</th>
           <th>Establecimiento Derivador</th>
           <th>Rango de Edad</th>
@@ -347,6 +362,7 @@ function renderTabla() {
       filas.forEach(d => {
         const rango = `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`;
         html += `<tr>
+          <td style="text-align:center">${esc(d.prioridad)}</td>
           <td>${esc(d.entidad)}</td>
           <td>${esc(d.estab_orig)}</td>
           <td style="white-space:nowrap">${esc(rango)}</td>
@@ -378,19 +394,19 @@ function exportar() {
     let hoja = base.substring(0, 31), n = 2;
     while (usados.has(hoja.toLowerCase())) hoja = `${base.substring(0, 25)} (${n++})`;
     usados.add(hoja.toLowerCase());
-    const rows = [['Especialidad Destino','Establecimiento Destino','Entidad',
+    const rows = [['Especialidad Destino','Establecimiento Destino','Prioridad','Entidad',
                    'Establecimiento Derivador','Rango de Edad','GES / No GES',
                    'Tipo de Derivación','Diagnóstico(s)']];
-    Object.keys(porEspec[esp]).sort().forEach(dest => {
-      porEspec[esp][dest].forEach(d => {
-        rows.push([esp, dest, d.entidad, d.estab_orig,
+    destinosPorPrioridad(porEspec[esp]).forEach(dest => {
+      porEspec[esp][dest].slice().sort(porPrioridad).forEach(d => {
+        rows.push([esp, dest, d.prioridad, d.entidad, d.estab_orig,
           `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`,
           d.ges, d.tipo, d.diagnostico]);
       });
       rows.push([]);
     });
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [20,35,18,35,20,12,20,55].map(w => ({wch:w}));
+    ws['!cols'] = [20,35,10,18,35,20,12,20,55].map(w => ({wch:w}));
     XLSX.utils.book_append_sheet(wb, ws, hoja);
   });
   XLSX.writeFile(wb, 'Derivaciones_Filtradas.xlsx');
