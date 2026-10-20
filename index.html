@@ -39,6 +39,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:var(--text
 .filtro-group label{font-size:12px;font-weight:600;color:var(--azul-osc);display:block;margin-bottom:4px;}
 .filtro-group select{width:100%;padding:9px 12px;border:1.5px solid #d0d8e8;border-radius:8px;font-size:13px;background:white;color:var(--texto);outline:none;}
 .filtro-group select:focus{border-color:var(--azul-med);}
+.buscador{margin-bottom:14px;}
+.buscador label{font-size:12px;font-weight:600;color:var(--azul-osc);display:block;margin-bottom:4px;}
+.buscador input[type=search]{width:100%;padding:10px 12px;border:1.5px solid #d0d8e8;border-radius:8px;font-size:16px;color:var(--texto);}
+.buscador input[type=search]:focus{border-color:var(--azul-med);outline:2px solid var(--azul-clar);}
+.buscador .check{display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:400;color:var(--texto-sec);margin-top:8px;cursor:pointer;}
+.buscador .check input{margin-top:2px;width:16px;height:16px;flex-shrink:0;}
+.aviso-generales{font-size:12px;color:#92400E;background:#FEF3C7;border-radius:8px;padding:8px 12px;margin-bottom:12px;}
+mark{background:#FDE68A;color:inherit;padding:0 1px;border-radius:2px;}
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
 .btn{padding:10px 20px;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;}
 .btn-primary{background:var(--azul-osc);color:white;}
@@ -111,6 +119,12 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 
   <div class="card" id="filtros-card" style="display:none">
     <div class="card-title">🔍 Filtros</div>
+    <div class="buscador">
+      <label for="f-diag">Buscar diagnóstico (nombre o código CIE-10)</label>
+      <input type="search" id="f-diag" placeholder="Ej: catarata, H25, diabetes" autocomplete="off" oninput="buscarConPausa()">
+      <label class="check"><input type="checkbox" id="f-generales" onchange="filtrar()">
+        <span>Incluir también las reglas generales (sin diagnóstico específico) de las especialidades encontradas</span></label>
+    </div>
     <div class="filtros-grid">
       <div class="filtro-group"><label for="f-espec">Especialidad Destino</label>
         <select id="f-espec" onchange="filtrar()"><option value="">Todas</option></select></div>
@@ -147,7 +161,7 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-let DATA = [], FILTRADA = [];
+let DATA = [], FILTRADA = [], OCULTAS_GENERALES = 0;
 
 window.addEventListener('load', cargarDesdeServidor);
 
@@ -218,6 +232,8 @@ function procesarExcel(buffer, nombre) {
         edad_desde: String(r[9] ||'').trim(),
         edad_hasta: String(r[10]||'').trim(),
         diagnostico: diag || 'Sin diagnóstico específico',
+        general:    !diag,
+        diag_norm:  normalizar(diag),
         ges:  ges,
         tipo: String(r[13]||'').trim(),
       });
@@ -274,6 +290,21 @@ function poblarSelect(id, opciones) {
   if (val) sel.value = val;
 }
 
+// Mayúsculas, sin tildes ni puntos: "catarata" encuentra "CATARATA" y "H25.1" encuentra "(H251)"
+function normalizar(t) {
+  return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\./g, '');
+}
+
+function terminosBusqueda() {
+  return normalizar(document.getElementById('f-diag').value).split(/\s+/).filter(Boolean);
+}
+
+let pausaBusqueda;
+function buscarConPausa() {
+  clearTimeout(pausaBusqueda);
+  pausaBusqueda = setTimeout(filtrar, 250);
+}
+
 function filtrar() {
   const fE = document.getElementById('f-espec').value;
   const fD = document.getElementById('f-dest').value;
@@ -289,12 +320,23 @@ function filtrar() {
     (!fG || d.ges        === fG) &&
     (!fT || d.tipo       === fT)
   );
+  // Buscador: todas las palabras deben aparecer en el diagnóstico de la regla
+  const terminos = terminosBusqueda();
+  OCULTAS_GENERALES = 0;
+  if (terminos.length) {
+    const coinciden = FILTRADA.filter(d => !d.general && terminos.every(t => d.diag_norm.includes(t)));
+    const especs = new Set(coinciden.map(d => d.espec_dest));
+    const generales = FILTRADA.filter(d => d.general && especs.has(d.espec_dest));
+    if (document.getElementById('f-generales').checked) FILTRADA = coinciden.concat(generales);
+    else { FILTRADA = coinciden; OCULTAS_GENERALES = generales.length; }
+  }
   renderTabla();
   document.getElementById('btn-export').disabled = !FILTRADA.length;
 }
 
 function limpiarFiltros() {
-  ['f-espec','f-dest','f-orig','f-entidad','f-ges','f-tipo'].forEach(id => document.getElementById(id).value = '');
+  ['f-espec','f-dest','f-orig','f-entidad','f-ges','f-tipo','f-diag'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-generales').checked = false;
   filtrar();
 }
 
@@ -322,19 +364,48 @@ function esc(v) {
   return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Escapa el texto y marca con <mark> las palabras buscadas (ignorando tildes, mayúsculas y puntos)
+function resaltar(texto, terminos) {
+  if (!terminos.length) return esc(texto);
+  let norm = '';
+  const pos = [];  // pos[i] = índice en el texto original del carácter i de norm
+  for (let i = 0; i < texto.length; i++) {
+    for (const ch of normalizar(texto[i])) { norm += ch; pos.push(i); }
+  }
+  const marcas = new Array(texto.length + 1).fill(0);
+  terminos.forEach(t => {
+    for (let k = norm.indexOf(t); k !== -1; k = norm.indexOf(t, k + 1)) {
+      marcas[pos[k]]++; marcas[pos[k + t.length - 1] + 1]--;
+    }
+  });
+  let html = '', dentro = 0, abierto = false;
+  for (let i = 0; i < texto.length; i++) {
+    dentro += marcas[i];
+    if (dentro > 0 && !abierto) { html += '<mark>'; abierto = true; }
+    if (dentro <= 0 && abierto) { html += '</mark>'; abierto = false; }
+    html += esc(texto[i]);
+  }
+  return html + (abierto ? '</mark>' : '');
+}
+
 function renderTabla() {
   const cont = document.getElementById('tabla-container');
   const card = document.getElementById('resultado-card');
   const info = document.getElementById('result-info');
   card.style.display = 'block';
 
+  const terminos = terminosBusqueda();
   if (!FILTRADA.length) {
     info.innerHTML = '';
-    cont.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>Sin resultados con los filtros aplicados</div></div>';
+    const ayuda = terminos.length
+      ? '<div style="font-size:12px;margin-top:6px">Ninguna regla con diagnóstico específico coincide. Prueba con otra palabra o el código CIE-10, o elige la especialidad: las reglas generales aplican a cualquier diagnóstico.</div>'
+      : '';
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>Sin resultados con los filtros aplicados</div>' + ayuda + '</div>';
     return;
   }
 
-  info.innerHTML = `Mostrando <strong>${FILTRADA.length}</strong> regla${FILTRADA.length !== 1 ? 's' : ''}`;
+  info.innerHTML = `Mostrando <strong>${FILTRADA.length}</strong> regla${FILTRADA.length !== 1 ? 's' : ''}` +
+    (OCULTAS_GENERALES ? `<div class="aviso-generales">Hay ${OCULTAS_GENERALES} regla${OCULTAS_GENERALES !== 1 ? 's' : ''} general${OCULTAS_GENERALES !== 1 ? 'es' : ''} (sin diagnóstico específico) en estas especialidades que no se muestran. Marca la casilla de arriba para verlas.</div>` : '');
 
   const porEspec = {};
   FILTRADA.forEach(d => {
@@ -368,7 +439,7 @@ function renderTabla() {
           <td style="white-space:nowrap">${esc(rango)}</td>
           <td>${badgeGes(d.ges)}</td>
           <td>${esc(d.tipo)}</td>
-          <td>${esc(d.diagnostico)}</td>
+          <td>${d.general ? esc(d.diagnostico) : resaltar(d.diagnostico, terminos)}</td>
         </tr>`;
       });
       html += `</tbody></table></div>`;

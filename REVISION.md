@@ -7,8 +7,8 @@ Fecha: 20 de octubre de 2026. Repositorio: `cmorenoglobal/derivacion-red`.
 - **No es un sitio fácil de atacar.** Es una página estática: no tiene usuarios ni contraseñas, no tiene formularios que envíen datos a ningún servidor, no tiene base de datos y no guarda nada de quien la visita. Lo único que hace es leer `reglas.xlsx` y mostrarlo en tablas.
 - **No hay datos de pacientes ni claves expuestas.** Revisé el Excel (4.539 reglas) y todo el historial de git (7 commits): solo hay reglas de derivación (comunas, establecimientos, especialidades, diagnósticos CIE-10). No aparecen RUT, nombres de pacientes, correos, teléfonos, claves ni tokens.
 - **Para "botarlo" o modificarlo, la vía real es tu cuenta de GitHub**, no el código. Quien entre a tu cuenta puede cambiar las reglas que ve toda la red. Por eso la recomendación más importante es proteger la cuenta (ver punto S1).
-- Corregí directamente 7 cosas de bajo riesgo (ver tabla). Todas las probé en un navegador Chromium: la página carga las 4.539 reglas, filtra, exporta a Excel y ahora también funciona sin internet.
-- Lo que más ayudaría a quienes usan la página en el celular: **buscador por diagnóstico y no dibujar las 4.539 reglas de una vez** (ver mejoras M2 y M3). La prioridad de cada regla ya se muestra y ordena (M1).
+- Corregí o agregué directamente 8 cosas de bajo riesgo (ver tabla). Todas las probé en un navegador Chromium: la página carga las 4.539 reglas, filtra, exporta a Excel y ahora también funciona sin internet.
+- Lo que más ayudaría a quienes usan la página en el celular: **no dibujar las 4.539 reglas de una vez** (ver M2). El buscador por diagnóstico (M3) y la prioridad de cada regla (M1) ya están hechos.
 
 ## Lo que ya quedó corregido en esta rama
 
@@ -21,6 +21,7 @@ Fecha: 20 de octubre de 2026. Repositorio: `cmorenoglobal/derivacion-red`.
 | 5 | Accesibilidad: `<label for>` en los filtros, aviso anunciado a lectores de pantalla, zona de "cargar archivo manualmente" usable con teclado | Lectores de pantalla y uso sin mouse. |
 | 6 | Exportar a Excel ya no falla con especialidades vacías, con `/ : ? * [ ]` o con nombres que coinciden en los primeros 31 caracteres | Excel rechaza esos nombres de hoja y la exportación se caía con un error. |
 | 7 | Columna "Prioridad" y orden por prioridad en la tabla y en la exportación | Antes no se veía qué destino es el preferente (ver M1). |
+| 8 | Buscador por diagnóstico (nombre o código CIE-10), con resaltado y opción de incluir reglas generales | Antes había que adivinar la especialidad (ver M3). |
 
 No se cambió ningún dato clínico ni se borró contenido.
 
@@ -103,9 +104,17 @@ Sin filtros, la página crea casi 4.900 filas de tabla. En un computador potente
 - Mostrar resultados solo cuando haya al menos un filtro elegido, o
 - mostrar las primeras 100 filas con un botón "ver más".
 
-### M3. Buscador por texto (diagnóstico o código CIE-10)
+### M3. Buscador por diagnóstico — **hecho**
 
-La pregunta típica es "¿a dónde derivo una catarata?" y hoy hay que adivinar la especialidad. Un cuadro de búsqueda que filtre por diagnóstico (y por código, por ejemplo `H25`) sería la mejora más útil.
+La pregunta típica es "¿a dónde derivo una catarata?" y antes había que adivinar la especialidad. Ahora hay un cuadro de búsqueda arriba de los filtros:
+
+- Busca en el texto del diagnóstico por nombre o por código CIE-10. No importan las tildes, las mayúsculas ni el punto del código: "diabética" encuentra "DIABETICA" y "H25.0" encuentra "(H250)".
+- Con varias palabras, muestra las reglas que tienen todas ("catarata diabetica").
+- Marca en amarillo las palabras encontradas dentro de cada diagnóstico.
+- Se combina con los demás filtros (por ejemplo, buscar "catarata" con el filtro de un CESFAM).
+- **Reglas generales:** 2.343 de las 4.539 reglas no tienen diagnóstico específico y aplican a cualquier diagnóstico de su especialidad. Al buscar, se muestra un aviso con cuántas reglas generales hay en las especialidades encontradas, y una casilla para incluirlas. Así no queda oculto el destino de respaldo.
+
+Pendiente relacionado: en el celular la columna de diagnóstico queda a la derecha y hay que deslizar la tabla para verla (ver M5).
 
 ### M4. Filtros que se ajusten entre sí
 
