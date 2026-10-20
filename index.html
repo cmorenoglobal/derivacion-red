@@ -67,7 +67,7 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 .empty-icon{font-size:44px;margin-bottom:12px;}
 .spinner{width:32px;height:32px;border:4px solid var(--azul-clar);border-top-color:var(--azul-med);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:white;padding:12px 24px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:white;padding:12px 24px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:calc(100% - 32px);text-align:center;}
 .toast.show{opacity:1;}
 @media(max-width:600px){.header h1{font-size:15px;}.main{padding:12px 10px;}.btn{padding:9px 13px;font-size:12px;}}
 </style>
@@ -112,21 +112,21 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
   <div class="card" id="filtros-card" style="display:none">
     <div class="card-title">🔍 Filtros</div>
     <div class="filtros-grid">
-      <div class="filtro-group"><label>Especialidad Destino</label>
+      <div class="filtro-group"><label for="f-espec">Especialidad Destino</label>
         <select id="f-espec" onchange="filtrar()"><option value="">Todas</option></select></div>
-      <div class="filtro-group"><label>Establecimiento Destino</label>
+      <div class="filtro-group"><label for="f-dest">Establecimiento Destino</label>
         <select id="f-dest" onchange="filtrar()"><option value="">Todos</option></select></div>
-      <div class="filtro-group"><label>Establecimiento Derivador</label>
+      <div class="filtro-group"><label for="f-orig">Establecimiento Derivador</label>
         <select id="f-orig" onchange="filtrar()"><option value="">Todos</option></select></div>
-      <div class="filtro-group"><label>Entidad</label>
+      <div class="filtro-group"><label for="f-entidad">Entidad</label>
         <select id="f-entidad" onchange="filtrar()"><option value="">Todas</option></select></div>
-      <div class="filtro-group"><label>GES / No GES</label>
+      <div class="filtro-group"><label for="f-ges">GES / No GES</label>
         <select id="f-ges" onchange="filtrar()">
           <option value="">Todos</option>
           <option value="GES">GES</option>
           <option value="NO GES">No GES</option>
         </select></div>
-      <div class="filtro-group"><label>Tipo de Derivación</label>
+      <div class="filtro-group"><label for="f-tipo">Tipo de Derivación</label>
         <select id="f-tipo" onchange="filtrar()"><option value="">Todos</option></select></div>
     </div>
     <div class="btn-row">
@@ -144,7 +144,7 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 let DATA = [], FILTRADA = [];
@@ -169,6 +169,11 @@ function setEstado(estado) {
   const icono = document.getElementById('upload-icon');
   const txt   = document.getElementById('upload-txt');
   const hint  = document.getElementById('upload-hint');
+  // Solo en estado de error la zona actúa como botón (también con teclado)
+  const clicable = estado === 'error';
+  zona.tabIndex = clicable ? 0 : -1;
+  if (clicable) zona.setAttribute('role', 'button'); else zona.removeAttribute('role');
+  zona.onkeydown = clicable ? ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); zona.click(); } } : null;
   if (estado === 'cargando') {
     zona.className='upload-zone loaded'; zona.onclick=null;
     icono.innerHTML='<div class="spinner"></div>';
@@ -366,7 +371,13 @@ function exportar() {
     if (!porEspec[d.espec_dest][d.estab_dest]) porEspec[d.espec_dest][d.estab_dest] = [];
     porEspec[d.espec_dest][d.estab_dest].push(d);
   });
+  const usados = new Set();
   Object.keys(porEspec).sort().forEach(esp => {
+    // Excel no acepta hojas sin nombre, repetidas, de más de 31 caracteres o con : \ / ? * [ ]
+    const base = esp.replace(/[:\\\/?*\[\]]/g, ' ').trim() || 'Sin especialidad';
+    let hoja = base.substring(0, 31), n = 2;
+    while (usados.has(hoja.toLowerCase())) hoja = `${base.substring(0, 25)} (${n++})`;
+    usados.add(hoja.toLowerCase());
     const rows = [['Especialidad Destino','Establecimiento Destino','Entidad',
                    'Establecimiento Derivador','Rango de Edad','GES / No GES',
                    'Tipo de Derivación','Diagnóstico(s)']];
@@ -380,7 +391,7 @@ function exportar() {
     });
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [20,35,18,35,20,12,20,55].map(w => ({wch:w}));
-    XLSX.utils.book_append_sheet(wb, ws, esp.substring(0, 31));
+    XLSX.utils.book_append_sheet(wb, ws, hoja);
   });
   XLSX.writeFile(wb, 'Derivaciones_Filtradas.xlsx');
   showToast('✅ Excel exportado');
