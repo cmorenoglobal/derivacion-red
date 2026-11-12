@@ -2,71 +2,137 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1F4E79">
 <meta name="description" content="Gestor de Reglas de Derivación — Red Asistencial SSVSA">
 <link rel="manifest" href="manifest.json">
-<title>Reglas de Derivación</title>
+<title>Reglas de Derivación SSVSA</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--azul-osc:#1F4E79;--azul-med:#2E75B6;--azul-clar:#DEEAF1;--verde-osc:#1E5C3A;--verde-med:#2E8B57;--verde-clar:#E2EFDA;--gris:#F2F7FC;--blanco:#ffffff;--texto:#1a1a2e;--texto-sec:#5a5a7a;}
+/* Layout: encabezado institucional fijo, panel de búsqueda arriba, resultados agrupados especialidad → destino */
+:root{
+  --azul-osc:#1F4E79;--azul-med:#2E75B6;--azul-clar:#DEEAF1;
+  --verde-osc:#1E5C3A;--verde-med:#2E8B57;--verde-clar:#E2EFDA;
+  --fondo:#f0f4f8;--superficie:#ffffff;--gris:#F2F7FC;--borde:#dde3ed;--borde-input:#d0d8e8;
+  --texto:#1a1a2e;--texto-sec:#5a5a7a;--sobre-color:#ffffff;
+  --chip:#eef3f9;--chip-cod:#1F4E79;--marca:#FFF3B0;--marca-txt:#1a1a2e;
+  --ges-bg:#D1FAE5;--ges-tx:#065F46;--nota-bg:#FEF3C7;--nota-tx:#92400E;
+  --error-bg:#FFF5F5;--error-bd:#e53e3e;--fila-par:#F5FAF2;--fila-hover:#E9F1F9;
+  --sombra:0 2px 8px rgba(20,40,70,.08);
+  --f-txt:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  --f-mono:ui-monospace,'SF Mono',Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --azul-osc:#1F4E79;--azul-med:#4F93D2;--azul-clar:#16283b;
+  --verde-osc:#1d4a31;--verde-med:#2E8B57;--verde-clar:#16281e;
+  --fondo:#0f1620;--superficie:#17212d;--gris:#1c2836;--borde:#2a3949;--borde-input:#33475c;
+  --texto:#e6edf5;--texto-sec:#9fb0c4;--sobre-color:#ffffff;
+  --chip:#1f2e3f;--chip-cod:#8cc0f0;--marca:#5c4d0f;--marca-txt:#fff6cc;
+  --ges-bg:#0f3b2c;--ges-tx:#8ff0c4;--nota-bg:#3f2f0c;--nota-tx:#f6cf7a;
+  --error-bg:#3a1818;--error-bd:#e06060;--fila-par:#1a2632;--fila-hover:#203246;
+  --sombra:0 2px 8px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --azul-osc:#1F4E79;--azul-med:#4F93D2;--azul-clar:#16283b;
+  --verde-osc:#1d4a31;--verde-med:#2E8B57;--verde-clar:#16281e;
+  --fondo:#0f1620;--superficie:#17212d;--gris:#1c2836;--borde:#2a3949;--borde-input:#33475c;
+  --texto:#e6edf5;--texto-sec:#9fb0c4;--sobre-color:#ffffff;
+  --chip:#1f2e3f;--chip-cod:#8cc0f0;--marca:#5c4d0f;--marca-txt:#fff6cc;
+  --ges-bg:#0f3b2c;--ges-tx:#8ff0c4;--nota-bg:#3f2f0c;--nota-tx:#f6cf7a;
+  --error-bg:#3a1818;--error-bd:#e06060;--fila-par:#1a2632;--fila-hover:#203246;
+  --sombra:0 2px 8px rgba(0,0,0,.35);color-scheme:dark}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:var(--texto);min-height:100vh;}
-.header{background:var(--azul-osc);color:white;padding:16px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3);}
-.header-icon{width:40px;height:40px;background:var(--azul-med);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+body{font-family:var(--f-txt);background:var(--fondo);color:var(--texto);min-height:100vh;font-size:14px;}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:101;background:var(--azul-osc);}
+.header{background:var(--azul-osc);color:var(--sobre-color);padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.header-icon{width:40px;height:40px;background:#2E75B6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none;}
 .header h1{font-size:18px;font-weight:600;}
-.header p{font-size:11px;opacity:.75;}
-.main{max-width:1100px;margin:0 auto;padding:20px 16px;}
-.card{background:white;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.07);}
-.card-title{font-size:13px;font-weight:700;color:var(--azul-osc);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
-.upload-zone{border:2px dashed var(--azul-med);border-radius:12px;padding:24px 20px;text-align:center;transition:all .2s;background:var(--azul-clar);}
-.upload-zone.loaded{border-color:var(--verde-med);background:var(--verde-clar);}
-.upload-zone.error{border-color:#e53e3e;background:#FFF5F5;cursor:pointer;}
-.upload-zone.error:hover{background:#FED7D7;}
-.upload-icon{font-size:32px;margin-bottom:8px;}
-.upload-txt{font-size:14px;color:var(--azul-osc);font-weight:600;}
-.upload-hint{font-size:12px;color:var(--texto-sec);margin-top:4px;}
+.header p{font-size:11px;opacity:.8;}
+.main{max-width:1180px;margin:0 auto;padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px;}
+.card{background:var(--superficie);border-radius:14px;padding:18px;box-shadow:var(--sombra);min-width:0;}
+.card-title{font-size:12px;font-weight:700;color:var(--azul-med);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;}
+
+/* Estado del archivo */
+.estado{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1.5px solid var(--verde-med);background:var(--verde-clar);border-radius:12px;padding:12px 14px;}
+.estado.error{border-color:var(--error-bd);background:var(--error-bg);cursor:pointer;}
+.estado-icono{font-size:22px;flex:none;}
+.estado-txt{flex:1;min-width:0;}
+.estado-txt strong{display:block;font-size:14px;color:var(--texto);}
+.estado-txt span{font-size:12px;color:var(--texto-sec);}
+.spinner{width:22px;height:22px;border:3px solid var(--azul-clar);border-top-color:var(--azul-med);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 #file-input{display:none;}
-.btn-actualizar{margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;}
-.stat-card{background:var(--gris);border-radius:10px;padding:12px;text-align:center;}
-.stat-val{font-size:22px;font-weight:700;color:var(--azul-osc);}
+
+/* Resumen */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+.stat-card{background:var(--gris);border-radius:10px;padding:10px 12px;}
+.stat-val{font-size:22px;font-weight:700;color:var(--azul-med);font-variant-numeric:tabular-nums;}
 .stat-lbl{font-size:11px;color:var(--texto-sec);margin-top:2px;}
-.filtros-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;}
-.filtro-group label{font-size:12px;font-weight:600;color:var(--azul-osc);display:block;margin-bottom:4px;}
-.filtro-group select{width:100%;padding:9px 12px;border:1.5px solid #d0d8e8;border-radius:8px;font-size:13px;background:white;color:var(--texto);outline:none;}
-.filtro-group select:focus{border-color:var(--azul-med);}
-.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
-.btn{padding:10px 20px;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;}
-.btn-primary{background:var(--azul-osc);color:white;}
-.btn-primary:hover{background:var(--azul-med);}
-.btn-success{background:var(--verde-med);color:white;}
+
+/* Pestañas por tipo */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.tab{border:1.5px solid var(--borde-input);background:var(--superficie);color:var(--texto);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;gap:8px;align-items:center;font-family:inherit;}
+.tab .n{font-size:11px;font-weight:700;background:var(--gris);color:var(--texto-sec);border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums;}
+.tab[aria-selected="true"]{background:var(--azul-osc);border-color:var(--azul-osc);color:var(--sobre-color);}
+.tab[aria-selected="true"] .n{background:rgba(255,255,255,.18);color:var(--sobre-color);}
+.tab:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--azul-med);outline-offset:2px;}
+
+/* Buscador */
+.buscador{position:relative;margin-bottom:14px;}
+.buscador input{width:100%;padding:12px 14px 12px 40px;border:1.5px solid var(--borde-input);border-radius:10px;font-size:15px;background:var(--superficie);color:var(--texto);font-family:inherit;}
+.buscador input:focus{border-color:var(--azul-med);outline:none;}
+.buscador .lupa{position:absolute;left:13px;top:23px;transform:translateY(-50%);font-size:16px;opacity:.6;}
+@media(max-width:600px){.stats-grid{grid-template-columns:1fr 1fr;}.stat-card:last-child:nth-child(odd){grid-column:1/-1;}}
+.buscador-hint{font-size:11px;color:var(--texto-sec);margin-top:5px;}
+
+.filtros-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+.filtro-group{min-width:0;}
+.filtro-group label{font-size:12px;font-weight:600;color:var(--azul-med);display:block;margin-bottom:4px;}
+.filtro-group select{width:100%;padding:9px 10px;border:1.5px solid var(--borde-input);border-radius:8px;font-size:13px;background:var(--superficie);color:var(--texto);font-family:inherit;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.btn{padding:9px 16px;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit;}
+.btn-success{background:var(--verde-med);color:var(--sobre-color);}
 .btn-success:hover{background:var(--verde-osc);}
-.btn-outline{background:white;color:var(--azul-osc);border:1.5px solid var(--azul-med);}
+.btn-outline{background:var(--superficie);color:var(--azul-med);border:1.5px solid var(--azul-med);}
 .btn-outline:hover{background:var(--azul-clar);}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Resultados */
 .result-info{font-size:13px;color:var(--texto-sec);margin-bottom:12px;}
-.result-info strong{color:var(--azul-osc);}
-.espec-block{margin-bottom:22px;}
-.espec-titulo{background:var(--azul-osc);color:white;padding:10px 14px;border-radius:10px 10px 0 0;font-weight:700;font-size:13px;}
-.dest-header{background:var(--verde-med);color:white;padding:8px 12px;font-weight:600;font-size:12px;}
-.tabla-wrap{overflow-x:auto;border:1px solid #dde3ed;border-top:none;}
-.tabla-wrap:last-child{border-radius:0 0 10px 10px;}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:650px;}
-thead th{background:var(--verde-osc);color:white;padding:9px 12px;text-align:left;white-space:nowrap;font-size:11px;font-weight:600;}
-tbody tr:nth-child(even){background:var(--verde-clar);}
-tbody tr:hover{background:var(--azul-clar);}
-td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-height:1.4;}
-.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
-.badge-ges{background:#D1FAE5;color:#065F46;}
-.badge-noges{background:#FEF3C7;color:#92400E;}
-.empty{text-align:center;padding:40px 20px;color:var(--texto-sec);}
-.empty-icon{font-size:44px;margin-bottom:12px;}
-.spinner{width:32px;height:32px;border:4px solid var(--azul-clar);border-top-color:var(--azul-med);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:white;padding:12px 24px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.result-info strong{color:var(--texto);font-variant-numeric:tabular-nums;}
+.espec-block{margin-bottom:20px;}
+.espec-titulo{background:var(--azul-osc);color:var(--sobre-color);padding:10px 14px;border-radius:10px 10px 0 0;font-weight:700;font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.espec-titulo small{font-weight:500;opacity:.8;}
+.dest-header{background:var(--verde-med);color:var(--sobre-color);padding:8px 12px;font-weight:600;font-size:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.tipo-dest{font-size:10px;font-weight:700;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px;text-transform:uppercase;letter-spacing:.04em;}
+.tabla-wrap{overflow-x:auto;border:1px solid var(--borde);border-top:none;}
+.espec-block .tabla-wrap:last-child{border-radius:0 0 10px 10px;}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:720px;}
+thead th{background:var(--verde-osc);color:var(--sobre-color);padding:8px 10px;text-align:left;white-space:nowrap;font-size:11px;font-weight:600;}
+tbody tr:nth-child(even){background:var(--fila-par);}
+tbody tr:hover{background:var(--fila-hover);}
+td{padding:8px 10px;border-bottom:1px solid var(--borde);vertical-align:top;line-height:1.4;}
+td.c-orig{width:26%;}
+td.c-edad{white-space:nowrap;font-variant-numeric:tabular-nums;}
+.comuna{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-sec);}
+.items{display:flex;flex-direction:column;gap:3px;}
+.item{display:flex;gap:6px;align-items:baseline;}
+.cod{font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--chip-cod);background:var(--chip);border-radius:4px;padding:0 5px;white-space:nowrap;flex:none;}
+.item.hit{background:var(--marca);color:var(--marca-txt);border-radius:4px;}
+.todos{color:var(--texto-sec);font-style:italic;}
+details.mas summary{cursor:pointer;color:var(--azul-med);font-size:11px;font-weight:600;list-style:none;margin-top:3px;}
+details.mas summary::-webkit-details-marker{display:none;}
+details.mas[open] summary{margin-bottom:3px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap;}
+.badge-ges{background:var(--ges-bg);color:var(--ges-tx);}
+.nota{display:inline-block;margin-top:4px;font-size:11px;background:var(--nota-bg);color:var(--nota-tx);border-radius:6px;padding:2px 7px;}
+.unidad{display:inline-block;margin-top:4px;font-size:11px;font-weight:600;background:var(--azul-clar);color:var(--azul-med);border-radius:6px;padding:2px 7px;}
+.paginar{display:flex;justify-content:center;margin-top:8px;}
+.empty{text-align:center;padding:36px 16px;color:var(--texto-sec);}
+.empty-icon{font-size:40px;margin-bottom:10px;}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:calc(100% - 32px);}
 .toast.show{opacity:1;}
-@media(max-width:600px){.header h1{font-size:15px;}.main{padding:12px 10px;}.btn{padding:9px 13px;font-size:12px;}}
+@media(max-width:600px){.header h1{font-size:15px;}.card{padding:14px;}.btn{padding:9px 12px;font-size:12px;}}
+@media(prefers-reduced-motion:reduce){.spinner{animation:none;}.toast{transition:none;}}
 </style>
 </head>
 <body>
@@ -82,61 +148,52 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 <div class="main">
 
   <div class="card">
-    <div class="card-title">📂 Estado del archivo</div>
-    <div class="upload-zone loaded" id="upload-zone">
-      <div class="upload-icon" id="upload-icon"><div class="spinner"></div></div>
-      <div class="upload-txt" id="upload-txt">Cargando datos automáticamente...</div>
-      <div class="upload-hint" id="upload-hint">Las reglas se cargan desde el servidor</div>
+    <div class="estado" id="estado">
+      <div class="estado-icono" id="estado-icono"><div class="spinner"></div></div>
+      <div class="estado-txt"><strong id="estado-txt">Cargando reglas…</strong><span id="estado-hint">Las reglas se cargan desde el servidor</span></div>
+      <button class="btn btn-outline" id="btn-recargar" type="button">🔄 Actualizar</button>
     </div>
-    <div class="btn-actualizar">
-      <button class="btn btn-outline" onclick="cargarDesdeServidor()" style="font-size:12px;padding:7px 14px">🔄 Actualizar datos</button>
-      <span style="font-size:11px;color:var(--texto-sec)" id="ultima-act"></span>
-    </div>
-    <input type="file" id="file-input" accept=".xlsx,.xls" onchange="loadFile(this.files[0])">
+    <input type="file" id="file-input" accept=".xlsx,.xls">
   </div>
 
-  <div class="card" id="stats-card" style="display:none">
-    <div class="card-title">📊 Resumen</div>
+  <div class="card" id="stats-card" hidden>
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Total reglas</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Reglas activas</div></div>
       <div class="stat-card"><div class="stat-val" id="st-espec">0</div><div class="stat-lbl">Especialidades</div></div>
-      <div class="stat-card"><div class="stat-val" id="st-dest">0</div><div class="stat-lbl">Estab. destino</div></div>
-      <div class="stat-card"><div class="stat-val" id="st-ges">0</div><div class="stat-lbl">Reglas GES</div></div>
-      <div class="stat-card"><div class="stat-val" id="st-entidades">0</div><div class="stat-lbl">Entidades</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-dest">0</div><div class="stat-lbl">Establecimientos destino</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-diag">0</div><div class="stat-lbl">Diagnósticos CIE-10 asociados</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-proc">0</div><div class="stat-lbl">Procedimientos con código</div></div>
     </div>
   </div>
 
-  <div class="card" id="filtros-card" style="display:none">
-    <div class="card-title">🔍 Filtros</div>
+  <div class="card" id="filtros-card" hidden>
+    <div class="tabs" role="tablist" id="tabs"></div>
+
+    <div class="buscador">
+      <span class="lupa">🔍</span>
+      <input type="search" id="q" placeholder="Buscar diagnóstico, código CIE-10, procedimiento o establecimiento" autocomplete="off">
+      <div class="buscador-hint">Ejemplos: «C73», «catarata», «04-04-003», «ecografía mamaria». Sin acentos ni puntos también funciona.</div>
+    </div>
+
     <div class="filtros-grid">
-      <div class="filtro-group"><label>Especialidad Destino</label>
-        <select id="f-espec" onchange="filtrar()"><option value="">Todas</option></select></div>
-      <div class="filtro-group"><label>Establecimiento Destino</label>
-        <select id="f-dest" onchange="filtrar()"><option value="">Todos</option></select></div>
-      <div class="filtro-group"><label>Establecimiento Derivador</label>
-        <select id="f-orig" onchange="filtrar()"><option value="">Todos</option></select></div>
-      <div class="filtro-group"><label>Entidad</label>
-        <select id="f-entidad" onchange="filtrar()"><option value="">Todas</option></select></div>
-      <div class="filtro-group"><label>GES / No GES</label>
-        <select id="f-ges" onchange="filtrar()">
-          <option value="">Todos</option>
-          <option value="GES">GES</option>
-          <option value="NO GES">No GES</option>
-        </select></div>
-      <div class="filtro-group"><label>Tipo de Derivación</label>
-        <select id="f-tipo" onchange="filtrar()"><option value="">Todos</option></select></div>
+      <div class="filtro-group"><label for="f-comuna">Comuna de origen</label><select id="f-comuna"></select></div>
+      <div class="filtro-group"><label for="f-orig">Establecimiento derivador</label><select id="f-orig"></select></div>
+      <div class="filtro-group"><label for="f-espec">Especialidad destino</label><select id="f-espec"></select></div>
+      <div class="filtro-group"><label for="f-tipodest">Tipo de establecimiento destino</label><select id="f-tipodest"></select></div>
+      <div class="filtro-group"><label for="f-dest">Establecimiento destino</label><select id="f-dest"></select></div>
+      <div class="filtro-group" id="g-unidad" hidden><label for="f-unidad">Unidad de llegada</label><select id="f-unidad"></select></div>
     </div>
     <div class="btn-row">
-      <button class="btn btn-outline" onclick="limpiarFiltros()">↺ Limpiar</button>
-      <button class="btn btn-primary" onclick="filtrar()">🔍 Aplicar</button>
-      <button class="btn btn-success" onclick="exportar()" id="btn-export" disabled>📥 Exportar Excel</button>
+      <button class="btn btn-outline" id="btn-limpiar" type="button">↺ Limpiar filtros</button>
+      <button class="btn btn-success" id="btn-export" type="button" disabled>📥 Exportar Excel</button>
+      <button class="btn btn-outline" id="btn-export-cie" type="button" disabled>📥 Exportar por CIE-10</button>
     </div>
   </div>
 
-  <div class="card" id="resultado-card" style="display:none">
-    <div class="card-title">📋 Resultados</div>
+  <div class="card" id="resultado-card" hidden>
     <div class="result-info" id="result-info"></div>
     <div id="tabla-container"></div>
+    <div class="paginar" id="paginar"></div>
   </div>
 
 </div>
@@ -144,202 +201,333 @@ td{padding:8px 12px;border-bottom:1px solid #eaeff5;vertical-align:top;line-heig
 <div class="toast" id="toast"></div>
 
 <script>
-let DATA = [], FILTRADA = [];
+/* ===== Configuración editable ===== */
+// Comuna de cada establecimiento derivador. Las entidades comunales se usan tal cual;
+// CORMUVAL y SSVSA se resuelven por establecimiento.
+const COMUNA_ENTIDAD = {
+  'ALGARROBO':'Algarrobo','CARTAGENA':'Cartagena','EL QUISCO':'El Quisco','EL TABO':'El Tabo',
+  'JUAN FERNANDEZ':'Juan Fernández','NAVIDAD':'Navidad','SAN ANTONIO':'San Antonio',
+  'SANTO DOMINGO':'Santo Domingo','CORMUVAL':'Valparaíso'
+};
+const COMUNA_ESTAB = {
+  'HOSPITAL SAN JOSE DE CASABLANCA':'Casablanca','POSTA DE SALUD RURAL LAGUNILLAS':'Casablanca',
+  'POSTA DE SALUD RURAL LAS DICHAS':'Casablanca','POSTA DE SALUD RURAL LOS MAITENES':'Casablanca',
+  'POSTA DE SALUD RURAL QUINTAY':'Casablanca',
+  'CENTRO DE SALUD FAMILIAR JEAN Y MARIE THIERRY':'Valparaíso','CENTRO DE SALUD FAMILIAR PLAZA JUSTICIA':'Valparaíso',
+  'CENTRO DE SANGRE Y TEJIDOS IV Y V REGIÓN':'Valparaíso',
+  'UNIDAD OFTALMOLOGICA MOVIL':'Red SSVSA (dispositivo móvil)'
+};
+// Especialidades odontológicas (pestaña Odontología)
+const ESPEC_ODONTO = new Set(['REHABILITACIÓN ORAL REMOVIBLE','REHABILITACIÓN ORAL','ENDODONCIA','PERIODONCIA',
+  'ODONTOPEDIATRIA','CIRUGÍA Y TRAUMATOLOGÍA BUCO MAXILOFACIAL','IMPLANTOLOGÍA BUCO MAXILOFACIAL',
+  'ORTODONCIA Y ORTOPEDIA DENTO MÁXILO FACIAL','REHABILITACIÓN PROTESIS FIJA',
+  'TRASTORNOS TEMPOMANDIBULARES Y DOLOR OROFACIAL','PATOLOGÍA ORAL MAXILOFACIAL','IMAGENOLOGÍA ORAL-MAXILOFACIAL']);
+// Archivo opcional con las unidades locales de llegada (Poli Identidad de Género, Acceso vascular, etc.)
+const ARCHIVO_UNIDADES = 'unidades_locales.xlsx';
+const POR_PAGINA = 300;
 
-window.addEventListener('load', cargarDesdeServidor);
+const TIPOS = [
+  {id:'',      nombre:'Todas'},
+  {id:'CNE',   nombre:'Consulta de especialidad'},
+  {id:'ODONTO',nombre:'Odontología'},
+  {id:'PROC',  nombre:'Procedimientos'}
+];
 
+let DATA = [], FILTRADA = [], UNIDADES = [], tipoActual = '', limite = POR_PAGINA, fechaArchivo = '', hintBase = '', infoUnidades = '';
+const $ = id => document.getElementById(id);
+
+/* ===== Utilidades ===== */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
+const fmtCie = c => /^[A-Z]\d{3,}$/.test(c) ? c.slice(0,3) + '.' + c.slice(3) : c;
+const titulo = s => s.toLowerCase().replace(/(^|\s|\()([a-záéíóúñü])/g, (m,a,b) => a + b.toUpperCase())
+  .replace(/\b(De|Del|La|Las|Los|Y|E|O|A|En|Para|Por|Con)\b/g, w => w.toLowerCase());
+
+// Separa ", NOMBRE (COD) , NOMBRE (COD)" en [{cod,nombre}]
+function separar(s, esCie) {
+  s = String(s || '').trim().replace(/^,\s*/, '');
+  if (!s) return [];
+  return s.split(' , ').map(t => {
+    t = t.trim();
+    const m = t.match(/\(([^()]*)\)\s*$/);
+    const cod = m ? m[1].trim() : '';
+    const nombre = (m ? t.slice(0, m.index) : t).trim().replace(/,\s*$/, '');
+    return { cod: esCie ? fmtCie(cod) : cod, nombre };
+  }).filter(x => x.nombre || x.cod);
+}
+
+function tipoDestino(d) {
+  const n = norm(d);
+  if (n.startsWith('HOSPITAL')) return 'Hospital';
+  if (n.includes('REFERENCIA DE SALUD ODONTOLOGICA')) return 'CRS Odontológico';
+  if (n.includes('SALUD MENTAL')) return 'Salud mental comunitaria';
+  if (n.includes('MOVIL')) return 'Dispositivo móvil';
+  if (n.includes('SALUD FAMILIAR') || n.startsWith('POSTA') || n.includes('COMUNITARIO')) return 'Atención primaria';
+  return 'Otro';
+}
+
+function fmtEdad(v) {
+  if (!v || !String(v).trim()) return '';
+  const p = String(v).trim().split(/\s+/);
+  const a = parseInt(p[0]), m = parseInt(p[2]);
+  if (isNaN(a)) return v;
+  if (a >= 150) return 'sin límite';
+  if (!m) return `${a} años`;
+  return `${a} a ${m} m`;
+}
+function rangoEdad(d) {
+  const a = fmtEdad(d.edad_desde), b = fmtEdad(d.edad_hasta);
+  if (a === '0 años' && b === 'sin límite') return 'Todas las edades';
+  if (b === 'sin límite') return `Desde ${a}`;
+  return `${a} – ${b}`;
+}
+
+/* ===== Carga ===== */
 async function cargarDesdeServidor() {
   setEstado('cargando');
   try {
-    const resp = await fetch('reglas.xlsx?v=' + Date.now());
+    const resp = await fetch('reglas.xlsx?v=' + Date.now(), {cache:'no-store'});
     if (!resp.ok) throw new Error('no encontrado');
-    const buf = await resp.arrayBuffer();
-    procesarExcel(buf, 'Servidor');
-    document.getElementById('ultima-act').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CL');
-  } catch(e) {
-    setEstado('error');
-  }
+    const lm = resp.headers.get('last-modified');
+    fechaArchivo = lm ? new Date(lm).toLocaleDateString('es-CL') : '';
+    procesarExcel(await resp.arrayBuffer(), 'servidor');
+  } catch (e) { setEstado('error'); }
+  cargarUnidades();
 }
 
-function setEstado(estado) {
-  const zona  = document.getElementById('upload-zone');
-  const icono = document.getElementById('upload-icon');
-  const txt   = document.getElementById('upload-txt');
-  const hint  = document.getElementById('upload-hint');
+// Se consulta en cada apertura y en cada "Actualizar", sin caché: un cambio publicado en GitHub se ve de inmediato.
+async function cargarUnidades() {
+  infoUnidades = '';
+  UNIDADES = [];
+  try {
+    const resp = await fetch(ARCHIVO_UNIDADES + '?v=' + Date.now(), {cache:'no-store'});
+    if (resp.ok) {
+      const lm = resp.headers.get('last-modified');
+      const wb = XLSX.read(await resp.arrayBuffer(), {type:'array'});
+      const hoja = wb.Sheets['Unidades'] || wb.Sheets[wb.SheetNames[0]];
+      const filas = XLSX.utils.sheet_to_json(hoja, {defval:''});
+      UNIDADES = filas.map(f => ({
+        activo: String(f['Activo'] || 'SI').trim().toUpperCase() !== 'NO',
+        dest:   norm(f['Establecimiento Destino']),
+        espec:  norm(f['Especialidad Destino']),
+        cie:    norm(f['Código CIE-10 (opcional)'] || f['Código CIE-10'] || ''),
+        cieTxt: String(f['Código CIE-10 (opcional)'] || f['Código CIE-10'] || '').trim(),
+        unidad: String(f['Unidad de llegada'] || '').trim(),
+        obs:    String(f['Observación'] || '').trim()
+      })).filter(u => u.activo && u.dest && u.espec && u.unidad);
+      infoUnidades = `${UNIDADES.length} unidad${UNIDADES.length === 1 ? '' : 'es'} de llegada registrada${UNIDADES.length === 1 ? '' : 's'}` +
+        (lm ? ` (planilla publicada el ${new Date(lm).toLocaleDateString('es-CL')})` : '');
+    }
+  } catch (e) { /* la planilla es opcional */ }
+  if (DATA.length) { asignarUnidades(); actualizarOpciones(); filtrar(); mostrarHint(); }
+}
+
+function asignarUnidades() {
+  DATA.forEach(d => {
+    d.unidad = ''; d.unidad_obs = '';
+    const cands = UNIDADES.filter(u => u.dest === norm(d.estab_dest) && u.espec === norm(d.espec_dest));
+    if (!cands.length) return;
+    const cods = d.diags.map(x => norm(x.cod));
+    // 1) unidad para un CIE-10 de la regla; 2) unidad para toda la especialidad;
+    // 3) regla sin diagnósticos específicos: se indican las unidades por CIE-10
+    const especifica = cands.find(u => u.cie && cods.some(c => c.startsWith(u.cie)));
+    const general = cands.find(u => !u.cie);
+    const u = especifica || general;
+    if (u) { d.unidad = u.unidad; d.unidad_obs = u.obs; return; }
+    if (!d.diags.length) {
+      d.unidad = cands.map(c => `${c.unidad} (para ${c.cieTxt})`).join(' · ');
+      d.unidad_obs = '';
+    }
+  });
+  $('g-unidad').hidden = !DATA.some(d => d.unidad);
+}
+
+function mostrarHint() {
+  if (!DATA.length) return;
+  $('estado-hint').textContent = hintBase + (infoUnidades ? ' · ' + infoUnidades : '');
+}
+
+function setEstado(estado, txt, hint) {
+  const box = $('estado'), ic = $('estado-icono');
+  box.classList.toggle('error', estado === 'error');
+  box.onclick = estado === 'error' ? (e => { if (e.target.id !== 'btn-recargar') $('file-input').click(); }) : null;
   if (estado === 'cargando') {
-    zona.className='upload-zone loaded'; zona.onclick=null;
-    icono.innerHTML='<div class="spinner"></div>';
-    txt.textContent='Cargando datos automáticamente...';
-    hint.textContent='Las reglas se cargan desde el servidor';
+    ic.innerHTML = '<div class="spinner"></div>';
+    $('estado-txt').textContent = 'Cargando reglas…';
+    $('estado-hint').textContent = 'Las reglas se cargan desde el servidor';
   } else if (estado === 'error') {
-    zona.className='upload-zone error';
-    zona.onclick=()=>document.getElementById('file-input').click();
-    icono.innerHTML='⚠️';
-    txt.textContent='No se pudo cargar desde el servidor';
-    hint.textContent='Toca aquí para cargar el archivo manualmente';
-  } else if (estado === 'ok') {
-    zona.className='upload-zone loaded'; zona.onclick=null;
-    icono.innerHTML='✅';
+    ic.textContent = '⚠️';
+    $('estado-txt').textContent = txt || 'No se pudo cargar el archivo de reglas desde el servidor';
+    $('estado-hint').textContent = 'Toca aquí para cargar el archivo reglas.xlsx manualmente';
+  } else {
+    ic.textContent = '✅';
+    $('estado-txt').textContent = txt;
+    $('estado-hint').textContent = hint;
   }
 }
 
 function loadFile(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => procesarExcel(e.target.result, file.name);
+  reader.onload = e => { fechaArchivo = ''; procesarExcel(e.target.result, file.name); };
   reader.readAsArrayBuffer(file);
 }
 
-function procesarExcel(buffer, nombre) {
+function procesarExcel(buffer, origen) {
   try {
-    const wb  = XLSX.read(buffer, { type: 'array' });
+    const wb  = XLSX.read(buffer, {type:'array'});
     const ws  = wb.Sheets[wb.SheetNames[0]];
-    const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
     DATA = [];
     for (let i = 1; i < raw.length; i++) {
       const r = raw[i];
       if (String(r[0]).trim().toUpperCase() !== 'SI') continue;
-      const diag = String(r[11]||'').trim().replace(/^,+/,'').trim();
-      const ges  = String(r[12]||'').trim().toUpperCase();
-      DATA.push({
-        entidad:    String(r[2] ||'').trim(),
-        estab_orig: String(r[3] ||'').trim(),
-        estab_dest: String(r[5] ||'').trim(),
-        espec_dest: String(r[7] ||'').trim(),
-        edad_desde: String(r[9] ||'').trim(),
-        edad_hasta: String(r[10]||'').trim(),
-        diagnostico: diag || 'Sin diagnóstico específico',
-        ges:  ges,
-        tipo: String(r[13]||'').trim(),
-      });
+      const entidad = String(r[2]||'').trim(), orig = String(r[3]||'').trim();
+      const espec_dest = String(r[7]||'').trim(), tipoTxt = String(r[13]||'').trim();
+      const estab_dest = String(r[5]||'').trim();
+      const d = {
+        entidad, estab_orig: orig,
+        comuna: COMUNA_ESTAB[orig] || COMUNA_ENTIDAD[entidad] || titulo(entidad),
+        estab_dest, tipo_dest: tipoDestino(estab_dest),
+        espec_sol: String(r[6]||'').trim(), espec_dest,
+        edad_desde: String(r[9]||'').trim(), edad_hasta: String(r[10]||'').trim(),
+        diags: separar(r[11], true),
+        procs: separar(r[15], false),
+        ges: String(r[12]||'').trim().toUpperCase() === 'GES',
+        tipo_txt: tipoTxt,
+        tipo: /proced/i.test(tipoTxt) ? 'PROC' : (ESPEC_ODONTO.has(espec_dest) ? 'ODONTO' : 'CNE'),
+        unidad: '', unidad_obs: ''
+      };
+      d.busq = norm([d.estab_orig, d.estab_dest, d.espec_dest, d.espec_sol,
+        ...d.diags.map(x => x.cod + ' ' + x.nombre), ...d.procs.map(x => x.cod + ' ' + x.nombre)].join(' | '));
+      DATA.push(d);
     }
-    if (!DATA.length) throw new Error('Sin reglas activas');
+    if (!DATA.length) throw new Error('el archivo no tiene reglas activas');
+    if (!fechaArchivo && wb.Props && wb.Props.ModifiedDate) fechaArchivo = new Date(wb.Props.ModifiedDate).toLocaleDateString('es-CL');
 
-    document.getElementById('st-total').textContent     = DATA.length;
-    document.getElementById('st-espec').textContent     = new Set(DATA.map(d=>d.espec_dest)).size;
-    document.getElementById('st-dest').textContent      = new Set(DATA.map(d=>d.estab_dest)).size;
-    document.getElementById('st-ges').textContent       = DATA.filter(d=>d.ges==='GES').length;
-    document.getElementById('st-entidades').textContent = new Set(DATA.map(d=>d.entidad)).size;
+    $('st-total').textContent = DATA.length.toLocaleString('es-CL');
+    $('st-espec').textContent = new Set(DATA.map(d => d.espec_dest)).size;
+    $('st-dest').textContent  = new Set(DATA.map(d => d.estab_dest)).size;
+    $('st-diag').textContent  = new Set(DATA.flatMap(d => d.diags.map(x => x.cod))).size.toLocaleString('es-CL');
+    $('st-proc').textContent  = new Set(DATA.flatMap(d => d.procs.map(x => x.cod))).size.toLocaleString('es-CL');
 
-    poblarSelect('f-espec',   [...new Set(DATA.map(d=>d.espec_dest))].filter(Boolean).sort());
-    poblarSelect('f-dest',    [...new Set(DATA.map(d=>d.estab_dest))].filter(Boolean).sort());
-    poblarSelect('f-orig',    [...new Set(DATA.map(d=>d.estab_orig))].filter(Boolean).sort());
-    poblarSelect('f-entidad', [...new Set(DATA.map(d=>d.entidad))].filter(Boolean).sort());
-    poblarSelect('f-tipo',    [...new Set(DATA.map(d=>d.tipo))].filter(Boolean).sort());
-
-    document.getElementById('stats-card').style.display   = 'block';
-    document.getElementById('filtros-card').style.display = 'block';
-
-    setEstado('ok');
-    document.getElementById('upload-txt').textContent  = `${DATA.length} reglas cargadas — ${nombre}`;
-    document.getElementById('upload-hint').textContent = 'Datos listos para consultar';
-
+    asignarUnidades();
+    prepararFiltros();
+    $('stats-card').hidden = false;
+    $('filtros-card').hidden = false;
+    hintBase = (fechaArchivo ? `Archivo de reglas publicado el ${fechaArchivo}` : 'Fecha del archivo no disponible') +
+      (origen === 'servidor' ? '' : ` · cargado manualmente (${origen})`);
+    setEstado('ok', `${DATA.length.toLocaleString('es-CL')} reglas activas cargadas`, hintBase);
+    mostrarHint();
     filtrar();
-    showToast('✅ ' + DATA.length + ' reglas cargadas');
-  } catch(err) {
-    showToast('Error: ' + err.message);
-    setEstado('error');
+  } catch (err) {
+    showToast('Error al leer el archivo: ' + err.message);
+    setEstado('error', 'No se pudo leer el archivo de reglas');
   }
 }
 
-function fmtEdad(v) {
-  if (!v || !v.trim()) return '';
-  try {
-    const p = v.trim().split(/\s+/);
-    const a = parseInt(p[0]), m = parseInt(p[2]);
-    if (a >= 150) return 'Sin límite';
-    if (a === 0 && m === 0) return '0 años';
-    return m === 0 ? `${a} años` : `${a} años ${m} meses`;
-  } catch { return v; }
+/* ===== Filtros ===== */
+const SELECTS = [
+  ['f-comuna','comuna','Todas'], ['f-orig','estab_orig','Todos'], ['f-espec','espec_dest','Todas'],
+  ['f-tipodest','tipo_dest','Todos'], ['f-dest','estab_dest','Todos'], ['f-unidad','unidad','Todas']
+];
+
+function prepararFiltros() { renderTabs(); actualizarOpciones(); }
+
+function renderTabs() {
+  const cont = $('tabs');
+  cont.innerHTML = TIPOS.map(t => {
+    const n = t.id ? DATA.filter(d => d.tipo === t.id).length : DATA.length;
+    return `<button class="tab" role="tab" type="button" data-tipo="${t.id}" aria-selected="${t.id === tipoActual}">${t.nombre}<span class="n">${n.toLocaleString('es-CL')}</span></button>`;
+  }).join('');
 }
 
-function poblarSelect(id, opciones) {
-  const sel = document.getElementById(id);
-  const val = sel.value;
-  sel.innerHTML = '<option value="">Todos</option>';
-  opciones.forEach(o => {
-    const opt = document.createElement('option');
-    opt.value = o; opt.textContent = o;
-    sel.appendChild(opt);
+// Las opciones de cada selector se acotan según los demás filtros (filtros en cascada)
+function actualizarOpciones() {
+  const vals = Object.fromEntries(SELECTS.map(([id]) => [id, $(id).value]));
+  SELECTS.forEach(([id, campo, todos]) => {
+    const base = DATA.filter(d => (!tipoActual || d.tipo === tipoActual) &&
+      SELECTS.every(([id2, c2]) => id2 === id || !vals[id2] || d[c2] === vals[id2]));
+    const ops = [...new Set(base.map(d => d[campo]))].filter(Boolean).sort((a,b) => a.localeCompare(b,'es'));
+    const sel = $(id);
+    sel.innerHTML = `<option value="">${todos}</option>` + ops.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    sel.value = ops.includes(vals[id]) ? vals[id] : '';
   });
-  if (val) sel.value = val;
 }
 
 function filtrar() {
-  const fE = document.getElementById('f-espec').value;
-  const fD = document.getElementById('f-dest').value;
-  const fO = document.getElementById('f-orig').value;
-  const fN = document.getElementById('f-entidad').value;
-  const fG = document.getElementById('f-ges').value;
-  const fT = document.getElementById('f-tipo').value;
+  const q = norm($('q').value);
+  const terminos = q ? q.split(' ').filter(Boolean) : [];
+  const vals = SELECTS.map(([id, campo]) => [campo, $(id).value]);
   FILTRADA = DATA.filter(d =>
-    (!fE || d.espec_dest === fE) &&
-    (!fD || d.estab_dest === fD) &&
-    (!fO || d.estab_orig === fO) &&
-    (!fN || d.entidad    === fN) &&
-    (!fG || d.ges        === fG) &&
-    (!fT || d.tipo       === fT)
-  );
-  renderTabla();
-  document.getElementById('btn-export').disabled = !FILTRADA.length;
+    (!tipoActual || d.tipo === tipoActual) &&
+    vals.every(([c, v]) => !v || d[c] === v) &&
+    terminos.every(t => d.busq.includes(t)));
+  limite = POR_PAGINA;
+  renderTabla(terminos);
+  $('btn-export').disabled = !FILTRADA.length;
+  $('btn-export-cie').disabled = !FILTRADA.length;
 }
 
 function limpiarFiltros() {
-  ['f-espec','f-dest','f-orig','f-entidad','f-ges','f-tipo'].forEach(id => document.getElementById(id).value = '');
+  SELECTS.forEach(([id]) => $(id).value = '');
+  $('q').value = '';
+  actualizarOpciones();
   filtrar();
 }
 
-function badgeGes(ges) {
-  if (ges === 'GES')    return `<span class="badge badge-ges">GES</span>`;
-  if (ges === 'NO GES') return `<span class="badge badge-noges">No GES</span>`;
-  return '';
+/* ===== Tabla ===== */
+function listaItems(items, terminos, vacio) {
+  if (!items.length) return `<span class="todos">${vacio}</span>`;
+  const coincide = x => terminos.length && terminos.every(t => norm(x.cod + ' ' + x.nombre).includes(t));
+  const html = x => `<div class="item${coincide(x) ? ' hit' : ''}">${x.cod ? `<span class="cod">${esc(x.cod)}</span>` : ''}<span>${esc(x.nombre)}</span></div>`;
+  const orden = terminos.length ? [...items].sort((a,b) => coincide(b) - coincide(a)) : items;
+  const visibles = Math.max(3, orden.filter(coincide).length);
+  if (orden.length <= visibles + 1) return `<div class="items">${orden.map(html).join('')}</div>`;
+  return `<div class="items">${orden.slice(0, visibles).map(html).join('')}</div>
+    <details class="mas"><summary>Ver ${orden.length - visibles} más</summary><div class="items">${orden.slice(visibles).map(html).join('')}</div></details>`;
 }
 
-function renderTabla() {
-  const cont = document.getElementById('tabla-container');
-  const card = document.getElementById('resultado-card');
-  const info = document.getElementById('result-info');
-  card.style.display = 'block';
-
+function renderTabla(terminos = []) {
+  const cont = $('tabla-container'), info = $('result-info');
+  $('resultado-card').hidden = false;
+  $('paginar').innerHTML = '';
   if (!FILTRADA.length) {
     info.innerHTML = '';
-    cont.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>Sin resultados con los filtros aplicados</div></div>';
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>No hay reglas con esta búsqueda y estos filtros. Prueba con menos filtros o con otra palabra.</div></div>';
     return;
   }
-
-  info.innerHTML = `Mostrando <strong>${FILTRADA.length}</strong> regla${FILTRADA.length !== 1 ? 's' : ''}`;
+  const muestra = FILTRADA.slice(0, limite);
+  info.innerHTML = `<strong>${FILTRADA.length.toLocaleString('es-CL')}</strong> regla${FILTRADA.length !== 1 ? 's' : ''}` +
+    (FILTRADA.length > muestra.length ? ` · mostrando las primeras ${muestra.length.toLocaleString('es-CL')}` : '');
 
   const porEspec = {};
-  FILTRADA.forEach(d => {
-    if (!porEspec[d.espec_dest]) porEspec[d.espec_dest] = {};
-    if (!porEspec[d.espec_dest][d.estab_dest]) porEspec[d.espec_dest][d.estab_dest] = [];
-    porEspec[d.espec_dest][d.estab_dest].push(d);
+  muestra.forEach(d => {
+    ((porEspec[d.espec_dest] ??= {})[d.estab_dest] ??= []).push(d);
   });
 
   let html = '';
-  Object.keys(porEspec).sort().forEach(esp => {
-    html += `<div class="espec-block"><div class="espec-titulo">🏥 ${esp}</div>`;
-    Object.keys(porEspec[esp]).sort().forEach(dest => {
-      const filas = porEspec[esp][dest];
-      html += `<div class="dest-header">📍 ${dest} — ${filas.length} regla${filas.length > 1 ? 's' : ''}</div>
+  Object.keys(porEspec).sort((a,b) => a.localeCompare(b,'es')).forEach(esp => {
+    const dests = porEspec[esp];
+    const n = Object.values(dests).reduce((s, f) => s + f.length, 0);
+    html += `<div class="espec-block"><div class="espec-titulo"><span>${esc(esp)}</span><small>${n} regla${n > 1 ? 's' : ''}</small></div>`;
+    Object.keys(dests).sort((a,b) => a.localeCompare(b,'es')).forEach(dest => {
+      const filas = dests[dest];
+      const conProc = filas.some(d => d.procs.length);
+      html += `<div class="dest-header">📍 ${esc(dest)} <span class="tipo-dest">${esc(filas[0].tipo_dest)}</span></div>
       <div class="tabla-wrap"><table>
-        <thead><tr>
-          <th>Entidad</th>
-          <th>Establecimiento Derivador</th>
-          <th>Rango de Edad</th>
-          <th>GES / No GES</th>
-          <th>Tipo de Derivación</th>
-          <th>Diagnóstico(s)</th>
-        </tr></thead><tbody>`;
+        <thead><tr><th>Establecimiento derivador</th><th>Edad</th><th>Diagnóstico(s) CIE-10</th>${conProc ? '<th>Procedimiento(s)</th>' : ''}</tr></thead><tbody>`;
       filas.forEach(d => {
-        const rango = `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`;
+        const extras = [
+          d.ges ? '<span class="badge badge-ges">Prestación GES</span>' : '',
+          d.espec_sol && d.espec_sol !== d.espec_dest ? `<span class="nota">Se solicita como ${esc(titulo(d.espec_sol))}</span>` : '',
+          d.unidad ? `<span class="unidad">Llega a: ${esc(d.unidad)}${d.unidad_obs ? ' · ' + esc(d.unidad_obs) : ''}</span>` : ''
+        ].filter(Boolean).join(' ');
         html += `<tr>
-          <td>${d.entidad}</td>
-          <td>${d.estab_orig}</td>
-          <td style="white-space:nowrap">${rango}</td>
-          <td>${badgeGes(d.ges)}</td>
-          <td>${d.tipo}</td>
-          <td>${d.diagnostico}</td>
+          <td class="c-orig"><span class="comuna">${esc(d.comuna)}</span>${esc(d.estab_orig)}${extras ? '<div>' + extras + '</div>' : ''}</td>
+          <td class="c-edad">${esc(rangoEdad(d))}</td>
+          <td>${listaItems(d.diags, terminos, 'Todos los diagnósticos de la especialidad')}</td>
+          ${conProc ? `<td>${listaItems(d.procs, terminos, '—')}</td>` : ''}
         </tr>`;
       });
       html += `</tbody></table></div>`;
@@ -347,43 +535,67 @@ function renderTabla() {
     html += `</div>`;
   });
   cont.innerHTML = html;
+  if (FILTRADA.length > muestra.length) {
+    $('paginar').innerHTML = `<button class="btn btn-outline" type="button" id="btn-mas">Mostrar ${Math.min(POR_PAGINA, FILTRADA.length - muestra.length)} reglas más</button>`;
+    $('btn-mas').onclick = () => { limite += POR_PAGINA; renderTabla(terminos); };
+  }
 }
 
+/* ===== Exportar ===== */
+const nombreTipo = id => (TIPOS.find(t => t.id === id) || {}).nombre || '';
+function filaBase(d) {
+  return { 'Tipo': nombreTipo(d.tipo), 'Especialidad Destino': d.espec_dest, 'Establecimiento Destino': d.estab_dest,
+    'Tipo de Destino': d.tipo_dest, 'Unidad de llegada': d.unidad, 'Comuna Origen': d.comuna, 'Entidad': d.entidad,
+    'Establecimiento Derivador': d.estab_orig, 'Rango de Edad': rangoEdad(d), 'Prestación GES': d.ges ? 'Sí' : '' };
+}
+function descargar(filas, anchos, nombre) {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(filas);
+  ws['!cols'] = anchos.map(w => ({wch:w}));
+  ws['!autofilter'] = {ref: ws['!ref']};
+  XLSX.utils.book_append_sheet(wb, ws, 'Reglas');
+  XLSX.writeFile(wb, nombre);
+  showToast('✅ Excel exportado: ' + filas.length.toLocaleString('es-CL') + ' filas');
+}
 function exportar() {
   if (!FILTRADA.length) return;
-  const wb = XLSX.utils.book_new();
-  const porEspec = {};
+  const filas = FILTRADA.map(d => ({ ...filaBase(d),
+    'Diagnóstico(s)': d.diags.map(x => `${x.cod} ${x.nombre}`).join('; ') || 'Todos los diagnósticos de la especialidad',
+    'Procedimiento(s)': d.procs.map(x => `${x.cod} ${x.nombre}`).join('; ') }));
+  descargar(filas, [22,32,38,20,22,16,14,40,18,10,70,50], 'Derivaciones_Filtradas.xlsx');
+}
+function exportarCie() {
+  if (!FILTRADA.length) return;
+  const filas = [];
   FILTRADA.forEach(d => {
-    if (!porEspec[d.espec_dest]) porEspec[d.espec_dest] = {};
-    if (!porEspec[d.espec_dest][d.estab_dest]) porEspec[d.espec_dest][d.estab_dest] = [];
-    porEspec[d.espec_dest][d.estab_dest].push(d);
+    const diags = d.diags.length ? d.diags : [{cod:'', nombre:'Todos los diagnósticos de la especialidad'}];
+    const procs = d.procs.map(x => `${x.cod} ${x.nombre}`).join('; ');
+    diags.forEach(x => filas.push({ ...filaBase(d), 'Código CIE-10': x.cod, 'Diagnóstico CIE-10': x.nombre, 'Procedimiento(s)': procs }));
   });
-  Object.keys(porEspec).sort().forEach(esp => {
-    const rows = [['Especialidad Destino','Establecimiento Destino','Entidad',
-                   'Establecimiento Derivador','Rango de Edad','GES / No GES',
-                   'Tipo de Derivación','Diagnóstico(s)']];
-    Object.keys(porEspec[esp]).sort().forEach(dest => {
-      porEspec[esp][dest].forEach(d => {
-        rows.push([esp, dest, d.entidad, d.estab_orig,
-          `${fmtEdad(d.edad_desde)} — ${fmtEdad(d.edad_hasta)}`,
-          d.ges, d.tipo, d.diagnostico]);
-      });
-      rows.push([]);
-    });
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [20,35,18,35,20,12,20,55].map(w => ({wch:w}));
-    XLSX.utils.book_append_sheet(wb, ws, esp.substring(0, 31));
-  });
-  XLSX.writeFile(wb, 'Derivaciones_Filtradas.xlsx');
-  showToast('✅ Excel exportado');
+  descargar(filas, [22,32,38,20,22,16,14,40,18,10,12,50,50], 'Derivaciones_por_CIE10.xlsx');
 }
 
 function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t); showToast._t = setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+/* ===== Eventos ===== */
+let tBusq;
+$('q').addEventListener('input', () => { clearTimeout(tBusq); tBusq = setTimeout(filtrar, 220); });
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('.tab'); if (!b) return;
+  tipoActual = b.dataset.tipo;
+  renderTabs(); actualizarOpciones(); filtrar();
+});
+SELECTS.forEach(([id]) => $(id).addEventListener('change', () => { actualizarOpciones(); filtrar(); }));
+$('btn-limpiar').onclick = limpiarFiltros;
+$('btn-export').onclick = exportar;
+$('btn-export-cie').onclick = exportarCie;
+$('btn-recargar').onclick = e => { e.stopPropagation(); cargarDesdeServidor(); };
+$('file-input').onchange = e => loadFile(e.target.files[0]);
+window.addEventListener('load', cargarDesdeServidor);
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
